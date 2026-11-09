@@ -1,4 +1,4 @@
-import {areOutputTimestampsVisible, areOutputMessageTypesVisible} from "@shared/dom/outputMessageHandler";
+import {areOutputTimestampsVisible, areOutputMessageTypesVisible} from "@web/output/outputMessageHandler.ts";
 import {copyCanvasToClipboard} from "@shared/dom/copyCanvasToClipboard.ts";
 
 type UnderlineStyle = 'solid' | 'dotted';

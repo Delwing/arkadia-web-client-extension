@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { createColorFormat, colorString } from "@modules/core/Colors";
+import { createColorFormat, colorString } from "@client/Colors.ts";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 import { characterStorage } from "@modules/core/storage";
 

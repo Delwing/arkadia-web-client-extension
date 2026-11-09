@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {createColorFormat} from "@modules/core/Colors";
+import {createColorFormat} from "@client/Colors.ts";
 
 export default function initMagikZnika(client: Client) {
     const COLOR = createColorFormat("#ff6347");

@@ -175,7 +175,10 @@ The client-side scripts entry is `src/client/main.ts` (loaded dynamically by the
 ## Key Architecture Patterns
 
 ### Client/UI Decoupling
-The game client (`src/client`) is UI-agnostic: DOM-free, no runtime `@web` imports (enforced by an ESLint boundary rule), and driven only through injected ports (`@client/ports`), the event bus, and concern-scoped settings accessors (`@modules/core/settings`). This is what lets another UI drive the real client. See `docs/CLIENT_UI_DECOUPLING.md` for the seam and a recipe for building a UI on it.
+The game client (`src/client`) is UI-agnostic: no runtime `@web` imports, no `document`/`window`/`navigator`/`location` (key presses, unload, clipboard, files and notifications come through `getHostPort()`), and driven only through injected ports (`@client/ports`), the event bus, and concern-scoped settings accessors (`@modules/core/settings`). This is what lets another UI drive the real client. See `docs/CLIENT_UI_DECOUPLING.md` for the seam and a recipe for building a UI on it.
+
+### Layering
+`@shared` ← `@modules` ← `@client` ← `@web` / `@web-ui`: a layer imports only those below it at runtime (static or `import()`); type-only imports are allowed. ESLint enforces it. When a lower layer needs something from a higher one, move the shared piece down, or have the higher layer hand it in (a port, an event, a callback or loader passed at bootstrap).
 
 ### Event System
 The project uses a custom event bus in `src/modules/core/eventBus.ts` with typed events defined in `src/shared/events/`. All cross-module communication goes through events. Check existing event handlers for patterns.

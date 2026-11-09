@@ -10,11 +10,11 @@ export type SoundCategory =
     | 'weapon'
     | 'stun';
 
-import {CommandOptions} from "@client/scripts/commandPreserveCaseMode.ts";
-import {LetterSubmitPayload} from "@client/types/letter.ts";
-import {TransportTimerPayload, TransportApproachingPayload, TransportStopEventPayload, TransportRoutePayload, TransportDebugState, TransportTimesDebugPayload, TransportLegResetPayload} from "@client/types/transport.ts";
-import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
-import {PluginInfo} from "@shared/types/Plugin.ts";
+import type {CommandOptions} from "@client/scripts/commandPreserveCaseMode.ts";
+import type {LetterSubmitPayload} from "@shared/types/letter.ts";
+import type {TransportTimerPayload, TransportApproachingPayload, TransportStopEventPayload, TransportRoutePayload, TransportDebugState, TransportTimesDebugPayload, TransportLegResetPayload} from "@client/types/transport.ts";
+import type {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
+import type {PluginInfo} from "@shared/types/Plugin.ts";
 import type {RecordedEvent} from "@shared/recorder/Recorder.ts";
 import type {Contract} from "@client/scripts/contracts.ts";
 import type {InventoryAction} from "@client/scripts/inventoryActions.ts";

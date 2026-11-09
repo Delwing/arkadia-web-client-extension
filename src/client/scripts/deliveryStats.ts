@@ -1,8 +1,8 @@
 import Client from "../Client";
-import {createColorFormat} from "@modules/core/Colors";
+import {createColorFormat} from "@client/Colors.ts";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {characterStorage} from "@modules/core/storage";
-import {getFromIndexedDB, getIndexedDBKeys, storeInIndexedDB, IndexedDBConfig} from "@client/utils/dataCache.ts";
+import {getFromIndexedDB, getIndexedDBKeys, storeInIndexedDB, IndexedDBConfig} from "@modules/data/dataCache.ts";
 import {GOLD_COLOR, SILVER_COLOR, COPPER_COLOR} from "../constants/colors";
 import {createPad, createHeader} from "./counterTableUtils";
 

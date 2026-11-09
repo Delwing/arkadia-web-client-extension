@@ -2,9 +2,9 @@ import { globalStorage } from "@modules/core/storage";
 import { getRenderSettings, onRenderSettingsChange } from "@modules/core/settings";
 import { getCustomSound, getCustomSounds } from "@modules/core/customSounds";
 import type Client from "./Client";
+import { getHostPort } from "./ports";
 import type { SoundCategory } from '@shared/events/clientEvents.ts';
 import type { SoundCategories } from '@shared/uiSettingsTypes';
-import { isIOS } from '@shared/dom/mobileOs.ts';
 
 export type SoundKey = string;
 
@@ -187,11 +187,7 @@ export default class SoundManager {
             if (this.primerActivated) return;
             this.activatePrimer();
         };
-        const opts: AddEventListenerOptions = { capture: true, passive: true };
-        document.addEventListener('click', onGesture, opts);
-        document.addEventListener('keydown', onGesture, opts);
-        document.addEventListener('touchstart', onGesture, opts);
-        document.addEventListener('pointerdown', onGesture, opts);
+        getHostPort().onUserGesture(onGesture);
     }
 
     private activatePrimer(): void {
@@ -246,7 +242,7 @@ export default class SoundManager {
      * Must be called from inside a user gesture: `play()` is refused otherwise.
      */
     private startKeepaliveLoop(): void {
-        if (isIOS() || this.keepaliveRequested) return;
+        if (getHostPort().platform.isIOS || this.keepaliveRequested) return;
         this.keepaliveRequested = true;
 
         this.keepalive.volume = KEEPALIVE_VOLUME;

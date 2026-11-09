@@ -1,4 +1,4 @@
-import { colorStringInLine, colorTokenInLine } from '@modules/core/Colors';
+import { colorStringInLine, colorTokenInLine } from '@client/Colors.ts';
 import { AnsiAwareBuffer, FormatStateSnapshot } from '@client/ansi/FormatState';
 
 describe('colorString', () => {

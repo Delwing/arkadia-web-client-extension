@@ -1,6 +1,6 @@
 import initFullHpTimer from '@client/scripts/fullHpTimer';
 import { EventEmitter } from 'events';
-import { colorString, createColorFormat } from '@modules/core/Colors';
+import { colorString, createColorFormat } from '@client/Colors.ts';
 import { characterStorage } from '@modules/core/storage';
 import { setTestSettings } from '../helpers/testSettings';
 

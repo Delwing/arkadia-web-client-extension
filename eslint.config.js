@@ -4,6 +4,21 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 
+// Layering, bottom to top: @shared <- @modules <- @client <- @web / @web-ui.
+// A layer may import those below it, never those above at runtime: neither
+// statically nor through import(). Type-only imports are erased at build time
+// and still allowed.
+const aliasGroup = (aliases) => aliases.flatMap(alias => [alias, `${alias}/*`])
+const noUpwardImports = (aliases, message) => ({
+  '@typescript-eslint/no-restricted-imports': ['error', {
+    patterns: [{ group: aliasGroup(aliases), allowTypeImports: true, message }],
+  }],
+  'no-restricted-syntax': ['error', {
+    selector: `ImportExpression[source.value=/^(${aliases.join('|')})(\\/|$)/]`,
+    message,
+  }],
+})
+
 export default [
   // '**/dist' rather than 'dist' so build output from nested standalone
   // projects (services/*/dist from `wrangler deploy --dry-run`) is ignored too.
@@ -90,13 +105,48 @@ export default [
     // referenced this way and are tracked as follow-up cleanups.
     files: ['src/client/**/*.{ts,tsx}'],
     rules: {
-      '@typescript-eslint/no-restricted-imports': ['error', {
-        patterns: [{
-          group: ['@web', '@web/*', '@web-ui', '@web-ui/*'],
-          allowTypeImports: true,
-          message: 'src/client must not import the web UI at runtime. Use the injected ports in @client/ports (setUiPort/setPluginHostPort) instead. Type-only imports are permitted.',
-        }],
-      }],
+      ...noUpwardImports(['@web', '@web-ui'],
+        'src/client must not import the web UI at runtime. Use the injected ports in @client/ports (setUiPort/setPluginHostPort/setHostPort) instead. Type-only imports are permitted.'),
+      // ...nor reach for the page itself: key presses, unload, the clipboard,
+      // files, the URL and notifications come through getHostPort().
+      'no-restricted-globals': ['error', ...['document', 'window', 'navigator', 'location'].map(name => ({
+        name,
+        message: `src/client must not use \`${name}\`: ask the host for it through getHostPort() (@client/ports), which the UI installs.`,
+      }))],
+    },
+  },
+  {
+    // @modules (storage, settings, event bus, data stores, sync) sits below the
+    // client and the UI. What it needs from them is handed in: ports, events,
+    // loaders passed by the bootstrap.
+    files: ['src/modules/**/*.{ts,tsx}'],
+    rules: noUpwardImports(['@client', '@web', '@web-ui'],
+      'src/modules must not import the client or the web UI at runtime. Move what both need down to @modules or @shared, or have the upper layer hand it in (an event, a registered callback, a loader passed by the bootstrap). Type-only imports are permitted.'),
+  },
+  {
+    // @shared is the bottom layer: types, events, pure helpers every layer uses.
+    files: ['src/shared/**/*.{ts,tsx}'],
+    rules: noUpwardImports(['@modules', '@client', '@web', '@web-ui'],
+      'src/shared is the bottom layer and must not import @modules, @client or the web UI at runtime. Type-only imports are permitted.'),
+  },
+  {
+    // Sync v1 still imports the backup categories from the web UI. It is deleted
+    // in stage 5b of docs/dev/SYNC_V2_PLAN.md; this exception goes with it.
+    files: [
+      'src/modules/firebase/firebaseUnifiedSync.ts',
+      'src/modules/firebase/syncEngine.ts',
+      'src/modules/firebase/firebaseSyncListener.ts',
+    ],
+    rules: {
+      'no-restricted-syntax': 'off',
+    },
+  },
+  {
+    // The one sanctioned exception: AnsiAwareBuffer.toDom() builds DOM nodes when
+    // a UI asks it to render a line. It runs only on that call, never on its own.
+    files: ['src/client/ansi/renderSegments.ts'],
+    rules: {
+      'no-restricted-globals': 'off',
     },
   },
   {

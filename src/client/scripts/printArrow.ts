@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {colorString} from "@modules/core/Colors";
+import {colorString} from "@client/Colors.ts";
 import {FormatStateSnapshot} from "@client/ansi/FormatState";
 
 export function printArrow(client: Client, dir: string, color: FormatStateSnapshot) {

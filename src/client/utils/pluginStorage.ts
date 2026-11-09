@@ -1,4 +1,4 @@
-import { storeInIndexedDB, getFromIndexedDB, clearIndexedDB } from './dataCache'
+import { storeInIndexedDB, getFromIndexedDB, clearIndexedDB } from '@modules/data/dataCache.ts'
 import type { PluginInfo } from '@shared/types/Plugin'
 
 export interface StoredPluginData {

@@ -1,5 +1,5 @@
 import type { HerbUse } from '@modules/data/dataStores/herbsStore';
-import { mudletColorLine } from '@modules/core/Colors';
+import { mudletColorLine } from '@client/Colors.ts';
 import { showTooltip, hideTooltip, type TooltipEntry } from '@shared/dom/tooltip';
 
 export { hideTooltip as hideHerbTooltip };

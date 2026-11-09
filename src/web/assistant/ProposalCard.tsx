@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { AssistantProposal, ValidationResult } from '@modules/core/assistant/proposalValidator.ts';
+import type { AssistantProposal, ValidationResult } from '@web/assistant/proposalValidator.ts';
 import { applyProposal } from './applyProposal';
 import { describeProposal } from './describeProposal';
 

@@ -6,10 +6,12 @@
  * place where the web UI supplies the concrete behaviour. Call `installClientPorts()`
  * once at bootstrap, before `registerScripts(client)`.
  */
-import { setUiPort, setPluginHostPort } from '@client/ports';
+import { setUiPort, setPluginHostPort, setHostPort } from '@client/ports';
+import { createBrowserHost } from './browserHost';
 import { showHerbTooltip, hideHerbTooltip } from './herbTooltip';
 import { showBookTooltip, hideBookTooltip } from './bookTooltip';
 import { showContextMenu } from './contextMenu';
+import { openHerbContextMenu, openRoomContextMenu } from './gameContextMenus';
 import { attachTooltip } from '@shared/dom/tooltip.ts';
 import { attachScrollback } from '@shared/dom/scrollback.ts';
 import { isAnyModalOpen } from './modals/appModal';
@@ -30,12 +32,17 @@ import { readPluginSqlite } from './pluginSqlite';
 export function installClientPorts(): void {
     publishPluginUiKit();
 
+    setHostPort(createBrowserHost());
+
     setUiPort({
         showHerbTooltip,
         hideHerbTooltip,
         showBookTooltip,
         hideBookTooltip,
         showContextMenu,
+        showHerbMenu: (herbId, actions, x, y, commandPrefix) =>
+            openHerbContextMenu({ herbId, actions, x, y, commandPrefix }),
+        showRoomMenu: openRoomContextMenu,
         attachTooltip,
         attachScrollback,
         // Suppress global (direction) keybinds while a page-level window is open.

@@ -36,7 +36,7 @@ import {
     lookupSetting,
     validateProposal,
     type ProposalKind,
-} from '@modules/core/assistant/proposalValidator.ts';
+} from '@web/assistant/proposalValidator.ts';
 import { buildAssistantSystemPrompt } from '@web/assistant/buildAssistantPrompt.ts';
 
 const bundle = bundleJson as unknown as KnowledgeBundle;

@@ -1,6 +1,6 @@
-import { DEFAULT_ATTACK_COMMAND } from "@client/utils/attackCommand";
-import { DEFAULT_DRAW_WEAPON_COMMAND } from "@client/utils/drawWeaponCommand";
-import { DEFAULT_SUPPORT_COMMAND } from "@client/utils/supportCommand";
+import { DEFAULT_ATTACK_COMMAND } from "@modules/core/attackCommand.ts";
+import { DEFAULT_DRAW_WEAPON_COMMAND } from "@modules/core/drawWeaponCommand.ts";
+import { DEFAULT_SUPPORT_COMMAND } from "@modules/core/supportCommand.ts";
 
 export type SunAnnouncement = 'notification' | 'frame' | 'off';
 

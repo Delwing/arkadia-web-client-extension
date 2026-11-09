@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { colorString, createColorFormat } from "@modules/core/Colors";
+import { colorString, createColorFormat } from "@client/Colors.ts";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
 import {findTableRange, lineOffset} from "./skillTable";
 

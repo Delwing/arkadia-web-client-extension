@@ -6,7 +6,7 @@ import {getNote} from "@modules/data/locationNotesStorage";
 import {getPluginLocationNotes} from "@modules/core/pluginLocationNotesRegistry";
 import {getSnapshot as getMultibindSnapshot} from "@modules/data/multibindStore";
 import {getMultibindLabel} from "../multibindKeys";
-import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import {roomContextMenuHandler} from "../roomContextMenu";
 
 type SearchableRoom = {
     id: number;

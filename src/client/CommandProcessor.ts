@@ -1,7 +1,7 @@
 import type Client from "./Client";
 import type { CommandOptions } from "./scripts/commandPreserveCaseMode";
-import { stripPolishCharacters } from "./stripPolishCharacters";
-import { mudletColorLine } from "@modules/core/Colors";
+import { stripPolishCharacters } from "@shared/stripPolishCharacters.ts";
+import { mudletColorLine } from "@client/Colors.ts";
 import { AliasList } from "./AliasList";
 
 export type CommandHookCallback = (

@@ -1,11 +1,11 @@
 import Client from "../Client";
 import {matchWhen} from "@client/Triggers.ts";
 import {getLongDir, isDirection, isPolishDirection, polishToEnglish} from "@shared/map/directions";
-import {stripPolishCharacters} from "../stripPolishCharacters";
+import {stripPolishCharacters} from "@shared/stripPolishCharacters.ts";
 import {parseExitString} from "./shortExits";
 import {parseDirectionBypass} from "./directionBypass";
 import {gmcp} from "../gmcp";
-import {colorString, createColorFormat} from "@modules/core/Colors";
+import {colorString, createColorFormat} from "@client/Colors.ts";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 

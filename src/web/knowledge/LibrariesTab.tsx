@@ -11,7 +11,7 @@ import {
     type LibrarySort,
 } from './knowledgeModel';
 import { areaOfRoom, currentArea, leadToLibrary } from './useKnowledgeData';
-import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import {roomContextMenuHandler} from "@web/gameContextMenus.ts";
 
 export interface LibrariesTabProps {
     report: LibrariesPayload | null;

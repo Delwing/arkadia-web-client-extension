@@ -11,7 +11,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { lookupSetting } from '@modules/core/assistant/proposalValidator';
+import { lookupSetting } from '@web/assistant/proposalValidator.ts';
 
 const REPO_ROOT = resolve(__dirname, '../..');
 

@@ -102,3 +102,10 @@ vi.mock('@modules/data/peopleStore', () => ({
     forceRefresh: vi.fn().mockResolvedValue(undefined),
     clear: vi.fn().mockResolvedValue(undefined),
 }));
+
+// The client reaches the page (key presses, unload, clipboard, files…) only
+// through its host port. Unit tests run it in jsdom as the page would, so they
+// get the browser host the stock UI installs at bootstrap.
+const { setHostPort } = await import('@client/ports');
+const { createBrowserHost } = await import('@web/browserHost.ts');
+setHostPort(createBrowserHost());

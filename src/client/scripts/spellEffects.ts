@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {createColorFormat} from "@modules/core/Colors";
+import {createColorFormat} from "@client/Colors.ts";
 
 /**
  * Countdowns for the spells we are under, read off the game's own warnings.
@@ -50,7 +50,7 @@ export interface SpellEffect {
 export default function initSpellEffects(client: Client) {
     const tag = 'spellEffects';
     const endsAt = new Map<string, number>();
-    let timer: number | null = null;
+    let timer: ReturnType<typeof setInterval> | null = null;
 
     function emit() {
         const now = Date.now();
@@ -72,7 +72,7 @@ export default function initSpellEffects(client: Client) {
 
     function ensureTicking() {
         if (timer === null) {
-            timer = window.setInterval(emit, 1000);
+            timer = setInterval(emit, 1000);
         }
     }
 

@@ -5,12 +5,12 @@ import {
     getDeviceInfo,
     saveImportedDevice,
     getSyncGroup,
-    triggerSettingsReload,
     shouldApplyDeviceSettings,
     type DeviceInfo,
     type ImportedDeviceEntry,
     type SyncGroup,
 } from "@modules/device";
+import { triggerSettingsReload } from "@web/deviceSettingsReload.ts";
 import type { ImportResult } from './backup';
 import { isExcludedLocalStorageKey } from './characterKeys';
 import { StorageChangeTracker } from './storageChanges';

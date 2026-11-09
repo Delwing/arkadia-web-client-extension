@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {createColorFormat} from "@modules/core/Colors";
+import {createColorFormat} from "@client/Colors.ts";
 import {gmcp} from "../gmcp";
 import {getShortDir, longToShort} from "@shared/map";
 import {AnsiAwareBuffer} from "../ansi/FormatState";

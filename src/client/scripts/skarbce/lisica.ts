@@ -8,7 +8,7 @@
  */
 import Client from "@client/Client.ts";
 import {characterStorage} from "@modules/core/storage";
-import {colorString, createColorFormat} from "@modules/core/Colors";
+import {colorString, createColorFormat} from "@client/Colors.ts";
 
 const TAG = "skarbce-lisica";
 const KNOCK = "zapukaj w drzwi";

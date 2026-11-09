@@ -1,6 +1,6 @@
 import Client from "@client/Client.ts";
 import eventBus from "@modules/core/eventBus.ts";
-import { createColorFormat } from "@modules/core/Colors.ts";
+import { createColorFormat } from "@client/Colors.ts";
 
 export type FishingState = 'idle' | 'fishing' | 'biting' | 'pulling';
 

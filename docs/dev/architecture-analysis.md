@@ -5,7 +5,8 @@
 > line-by-line), so exact line numbers may drift. Treat as a map, not a spec.
 >
 > **Originally written 2026-05-30, re-verified 2026-07-27 and again against master on
-> 2026-10-31; the Tier 1 splits landed 2026-11-05.** Re-measure before citing a number.
+> 2026-10-31; the Tier 1 splits landed 2026-11-05; re-measured and the layering pass
+> landed 2026-11-08.** Re-measure before citing a number.
 
 ## Progress since the original review
 
@@ -17,7 +18,7 @@
 | 381 raw `Form.*` usages in `options/` | **Done.** Bootstrap is gone (2026-09-22). Shared controls (`Field`, `Check`, `Input`, `Select`, `ColorInput`, `ChoiceList`…) live in `src/ui/web/primitives/controls.tsx`. |
 | `src/web/main.ts` | **Done.** 193 lines; the stock UI is one React tree under `src/web/app/`. |
 | `src/shared/ansi/` empty directory | **Removed.** |
-| Tier 2 #1/#2 — `BaseCounter` + table helpers | **Partly done** — used by `kill`, `improveCounter`, `deliveryStats`, `deposits`, `prettyContainers`; `herbCounter`, `whoCount`, `przybywajaCount` still hand-roll theirs. |
+| Tier 2 #1/#2 — `BaseCounter` + table helpers | **Partly done** — only `kill` and `improveCounter` extend `BaseCounter`; `deliveryStats`, `deposits` and `prettyContainers` use just the `counterTableUtils` table helpers; `herbCounter`, `whoCount`, `przybywajaCount` still hand-roll theirs. |
 | `PluginApi.ts` — 5,510 lines | **Done** (2026-10-31). `src/client/PluginApi/`: 30 files, one per domain (types + a `create*Api(ctx)` factory that owns its registrations and cleanup), largest `map.ts` (~620). `PluginApiImpl` is a ~150-line assembler. The plugin types are now generated entirely from source (#1433). |
 | `scripts/knowledge.ts` — 2,835 lines | **Done** (2026-10-31). `src/client/scripts/knowledge/`: one file per feature (`libraries`, `books`, `entries`, `detailsRun` for `/wiedza_buduj`, `levels`, `hints`) sharing a `KnowledgeContext`, over pure `parsing` / `progress` / `reports`; largest `libraries.ts` (~440). The two near-identical details-report builders became one. |
 | `src/shared/map/MapHelper.ts` — 1,893 lines | **Done** (2026-11-04). Moved to `src/client/map/` and split by responsibility: `MapDataStore` (reader, pathfinder, lookups) + `liveEdits` (`syncAreas`/`applyRoomChanges`), `PositionTracker` (current room, moves, GMCP fixes) with `PositionLoss` and `MoveJournal`, `exitResolution` (pure direction/exit logic), `LeadPlanner` (/prowadz, /prowadzt, trip planner), `MapDrawData` (path/highlight/label events), `RoomBinds`, `mapEvents` (client-event wiring). `MapHelper` stays as the facade `client.Map` (~450 lines, all delegation); largest part `PositionTracker` (~390). The route planners (`transportPathFinder`, `carriagePathFinder`, `roomDistances`) moved with it; the UI-neutral `directions`, `exitCommands` and `dataLoader` stay in `@shared/map`. No DOM was involved: "rendering" was only the draw-data events. Plugin types unchanged. The labyrinth and tide scripts now reach the map's hashes and pathfinder through `client.Map.data` instead of `as any` pokes. |
@@ -25,6 +26,9 @@
 | `options/exportUtils.ts` — 1,246 lines | **Done** (2026-11-04). `src/web/options/export/`: one handler per hand-written category in `categories/` (`uiSettings`, `characterSettings`, `buttons` + `radial`, `killCounts`, `knowledge`, `visitedRooms`, `recordings`, `locationNotes`, `multibinds`), dispatched from a table in `categories.ts` instead of two parallel switches; `backup` (v2 file), `legacyBackup` (v1 restore), `importValidator`, `characterKeys`, `storageKeys` (generic registry keys), `storageChanges` (tracked writes + listener notification), `mergeEnvelopes`. Largest `legacyBackup.ts` (~140). Factored out: the listener notification and the profession CRDT merge (each written out 2–3 times), the two IndexedDB openers, the `mobileButtonSettings` read-merge. The old `exportUtils.ts` path is gone; importers use `export/` (the barrel `export/index.ts` for the lazily loaded sync code). Tests mirror it under `test/web/options/export/`. |
 | `ObjectList.ts` — 1,199 lines | **Done** (2026-11-04). `src/web/objectList/`: `ObjectList.ts` is the shell (~260: subscriptions, view mode, render), `ObjectListEventHandlers.ts` the clicks and context menus (~430), `objectListDrag.ts` the floating window's drag (~140), and `pip/` the Picture-in-Picture window (`PictureInPictureSync` ~240, plus `pipStatus`, `pipHtml`, `pipStyles`). The view-mode renderers and the filters had already moved out (`strategies.ts`, `objectListFilters.ts`). |
 | `options/FirebaseTab.tsx` — 1,091 lines | **Done** (2026-11-04). `src/web/options/firebase/`: hooks `useFirebaseInit`, `useFirebaseAuth` (auth state + sign-in form), `useFirebaseSync` (settings, passphrase, toasts, manual actions) and one component per section (`AuthForm`, `AccountBar`, `EncryptionSection`, `AutoSyncSection`, `LocationHandoffSection`, `CloudDeleteSection`, `SyncButtons`…); `FirebaseTab.tsx` is a ~110-line composer, largest file `useFirebaseSync.ts` (~210). The sync-v1 code (engine events, cloud metadata, conflict dialog, v1 actions, the disable-encryption flow) is in `firebase/v1/`, to delete in stage 5b of `SYNC_V2_PLAN.md`, but not all of it is v1-only: `cloudMetadata` from `v1/useSyncV1` also feeds `EncryptionSection` and `FirebaseTab` in v2 mode, so stage 5b needs edits outside `v1/` too. |
+| Client "DOM-free" claim vs. reality | **Done** (2026-11-08). `src/client` used `window`/`document`/`navigator` in ~30 places: 8 global `keydown` listeners, 7 `beforeunload`, clipboard, file save/open (`oswajanie`), legacy plugin `<script>` tags, the `add-script` URL parameter, cross-tab `storage` events, notifications, the audio-unlock gesture, three copies of Mac detection. All go through `HostPort` (`@client/ports/hostPort.ts`; browser implementation `src/web/browserHost.ts`, also installed by the unit-test setup). ESLint `no-restricted-globals` forbids the four globals in `src/client`; the one exception is `renderSegments.ts` (the renderer behind `AnsiAwareBuffer.toDom()`). |
+| `@modules → @web` (not in the original review) | **Done** (2026-11-08). `contextMenus.ts` (room/herb menus) was web UI in `@modules/core`: now `src/web/gameContextMenus.ts`, and the six client scripts that opened those menus call `UiPort.showHerbMenu` / `showRoomMenu`. `triggerSettingsReload` / `applyImportedDeviceSettings` → `src/web/deviceSettingsReload.ts`; the unused `deviceSettingsBundle.ts` deleted; two settings migrations take their web pieces as loaders from the bootstrap. Only sync v1 still `import()`s `@web/options/export` (a listed lint exception until stage 5b). |
+| `@shared → @client` reverse dependency (Tier 4), and `@modules → @client` (~20 runtime imports, not in the original review) | **Done** (2026-11-08). Moved down: `dataCache`, `wiedzaLoader` → `@modules/data`; default attack/draw/support commands → `@modules/core`; `stripPolishCharacters`, `knowledgeCategories`, `types/letter` → `@shared`. Moved up: `Colors.ts` → `@client` (≈100 client importers); `proposalValidator` → `@web/assistant` (web-only); `outputMessageHandler`, `outputText` → `@web/output`. `clientEvents.ts` now type-imports its client payload types. ESLint forbids runtime upward imports for all three lower layers (static and `import()`; type-only imports allowed). |
 
 ## The shape of the problem
 
@@ -48,14 +52,16 @@ to follow elsewhere.**
 
 ## Tier 1 — God files (break these up first)
 
-Line counts as of 2026-11-05. The six files of the 2026-10-31 list are done except
+Line counts as of 2026-11-08. The six files of the 2026-10-31 list are done except
 `firebaseUnifiedSync.ts` (see the progress table); what is left is the next-largest files.
 Only the two carried-over rows have had a jobs-per-file read yet.
 
 | File | Lines | Distinct jobs crammed in | Split into |
 |---|---|---|---|
 | `src/web/keys/Keys.tsx` | 1,665 | to be analysed | to be analysed |
-| `src/modules/core/assistant/proposalValidator.ts` | 1,385 | to be analysed | to be analysed |
+| `plugins/editor/main.ts` | 2,135 | to be analysed (the largest file in the repo; was missing from this list) | to be analysed |
+| `plugins/editor/monacoSetup.ts` | 1,940 | to be analysed (missing from this list too) | to be analysed |
+| `src/web/assistant/proposalValidator.ts` | 1,385 | to be analysed (moved from `@modules/core/assistant` 2026-11-08) | to be analysed |
 | `src/modules/firebase/firebaseUnifiedSync.ts` | 1,376 | document I/O + category sync + device registry + sync groups + conflict resolution | Mostly the v1 single-document sync — most of it goes when v1 is removed (`docs/dev/SYNC_V2_PLAN.md`, stage 5b); the device registry stays |
 | `src/client/scripts/inventory.ts` | 1,276 | to be analysed | to be analysed |
 | `src/web/herbs/HerbManager.tsx` | 1,209 | to be analysed | to be analysed |
@@ -64,6 +70,10 @@ Only the two carried-over rows have had a jobs-per-file read yet.
 
 `AnsiAwareBuffer.ts` (1,255) is deliberately not listed: it is one plugin-facing class
 whose methods are the API.
+
+Next in size, not yet read: `MudClient.ts` (1,164), `transportTracker.ts` (1,118),
+`plugins/editor/codingAgentPanel.ts` (1,081), `StaticMapPopup.tsx` (1,071),
+`LogViewer.tsx` (1,051), `oswajanie.ts` (1,031), `WindowManager.ts` (1,030), `clock.ts` (1,027).
 
 **Highest leverage:** `Keys.tsx` — the largest file left.
 
@@ -74,10 +84,10 @@ whose methods are the API.
 Places where N near-identical implementations should descend from one base. Ranked by payoff.
 
 **1. Counter scripts → `BaseCounter`** — *partly done*
-`src/client/scripts/BaseCounter.ts` and `counterTableUtils.ts` (with ANSI-segment-aware
-truncation) cover `kill`, `improveCounter`, `deliveryStats`, `deposits` and
-`prettyContainers`. **`herbCounter` (939 lines, still builds its own header),
-`whoCount` and `przybywajaCount` have not been migrated.**
+`src/client/scripts/BaseCounter.ts` is extended by `kill` and `improveCounter`;
+`counterTableUtils.ts` (with ANSI-segment-aware truncation) is also used by
+`deliveryStats`, `deposits` and `prettyContainers`. **`herbCounter` (978 lines, still
+builds its own header), `whoCount` and `przybywajaCount` have not been migrated.**
 
 **2. Popup content patterns → shared components**
 Window chrome is shared, but *content* isn't:
@@ -129,7 +139,7 @@ Co-locating related files is what makes the Tier-2 duplication visible and fixab
 
 ## Tier 4 — Unification / simplification of codepaths
 
-- **GMCP fan-out** — ~70 ad-hoc `.on('gmcp.*')` handlers, 9 of them on
+- **GMCP fan-out** — 73 ad-hoc `.on('gmcp.*')` handlers, 10 of them on
   `gmcp.char.state`. A `gmcpAggregator` would centralize subscription.
 - **Team/Object duplication** — `TeamManager` and `ObjectManager` both store
   `gmcp.objects.data` in parallel Maps. Make `ObjectManager` the single source of truth;
@@ -137,22 +147,22 @@ Co-locating related files is what makes the Tier-2 duplication visible and fixab
 - **Combat-execution spaghetti** — `KeyBindingManager` → `AttackController` →
   `AllyProtection` → back through `CommandProcessor`. A single `CombatExecutor` would
   linearize the ally-check-then-attack flow.
-- **`@shared` scope leaks** — real architectural smells:
-  - `shared/events/clientEvents.ts` imports ~20 `@client`-specific types (`ChatEntry`,
-    `FishingStatePayload`…), creating a **reverse dependency** `@shared → @client`
-    (8 files in `src/shared` import `@client`). The client events should live in
-    `@client/events`.
-  - ~~`MapHelper.ts` depends on `characterStorage` and `@client` types~~ — **done**
-    (2026-11-04): it and the route planners live in `src/client/map/`; `@shared/map`
-    keeps only UI-neutral helpers (`directions`, `exitCommands`, `dataLoader`) and no
-    longer imports `@client`. `shared/events/clientEvents.ts` still type-imports
-    `MapLostReason` and `RouteSegment` from there, as part of the client-events leak above.
-  - `shared/dom` (`outputText`, `outputMessageHandler`) imports `@client/ansi`. It
-    isn't reusable by a non-web client — it belongs in `@client` (or the DOM parts
-    in `@web`).
+- ~~**`@shared` scope leaks**~~ — **done** (2026-11-08), together with the `@modules`
+  leaks; see the progress table. The layering is now `@shared` ← `@modules` ← `@client`
+  ← `@web`/`@web-ui`, enforced by ESLint for runtime imports. What is left:
+  - **Type-only upward imports** are still allowed and still common: `clientEvents.ts`
+    names ~35 payload types from client modules (`ChatEntry`, `FishingStatePayload`…),
+    10 files in `@modules` name client types, `pluginUiRegistry` / `pluginButtonMacroRegistry`
+    name `@web` types. They erase at build time, but they make the layers read as one.
+    Moving payload types next to the events (or into `@shared/types`) would let the
+    rules drop `allowTypeImports`.
+  - **Sync v1** keeps three `import('@web/options/export')` calls under a listed lint
+    exception; they go with v1 (stage 5b).
+  - **`@web-ui` → `@web`**: 16 files in `src/ui/web` import `@web`. Whether `@web-ui`
+    is a layer below `@web` or the same layer is undecided; no rule yet.
 - **Storage-key naming** — `characterStorageKeys` in `storageSchema.ts` lists the keys,
-  but code still uses literal strings (`"herb_counts"` in `herbCounter`, `inventory`,
-  `contextMenus`); a typo silently creates a new entry. A central `Stores` const used
+  but ~100 `characterStorage.get/set` calls still pass literal strings (`"herb_counts"`
+  in `herbCounter`, `inventory`, `gameContextMenus`); a typo silently creates a new entry. A central `Stores` const used
   at the call sites fixes this.
 
 ---
@@ -160,10 +170,11 @@ Co-locating related files is what makes the Tier-2 duplication visible and fixab
 ## Suggested sequence
 
 1. ~~Split `PluginApi.ts` by domain~~ and ~~`knowledge.ts`~~ — both done 2026-10-31; ~~the Tier 1 splits (`MapHelper`, `FormatState`, `exportUtils`, `ObjectList`, `FirebaseTab`)~~ — done 2026-11-05.
-2. **Finish `BaseCounter`** — migrate `herbCounter`, `whoCount` and `przybywajaCount`.
-3. **Remove sync v1** — takes most of `firebaseUnifiedSync.ts` with it.
-4. **Folder reorganization** of `scripts/` and web popups — makes remaining duplication self-evident.
-5. **Fix the `@shared` reverse dependencies** — small, but genuine architecture violations.
+2. ~~**Close the layering leaks**~~ — done 2026-11-08 (`HostPort`, `@modules`/`@shared` upward imports, ESLint rules).
+3. **Remove sync v1** — takes most of `firebaseUnifiedSync.ts` with it, and the last lint exception. Check Firestore first.
+4. **Analyse and split the remaining Tier 1 files**, starting with `Keys.tsx` and the plugin editor.
+5. **Finish `BaseCounter`** — migrate `herbCounter`, `whoCount` and `przybywajaCount`.
+6. **Folder reorganization** of `scripts/` and web popups — makes remaining duplication self-evident. One domain at a time: it churns imports.
 
 ---
 

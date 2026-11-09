@@ -1,6 +1,6 @@
 import { useState } from "react";
 import eventBus from "@modules/core/eventBus";
-import { getBaseCategoryFromName } from "@client/knowledgeCategories";
+import { getBaseCategoryFromName } from "@shared/knowledgeCategories.ts";
 import type { WiedzaDbResult } from "@modules/data/wiedzaDbImport.shared";
 import { mergeKnowledgeEvents, type KnowledgeEvent } from "@modules/data/dataStores/knowledgeEventsStore";
 import { Field, Select } from "@web-ui/primitives/index.ts";

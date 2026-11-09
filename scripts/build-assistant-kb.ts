@@ -1566,7 +1566,7 @@ function buildSchemas(): { schemas: SchemaCatalog; events: EventEntry[]; macroTy
     };
 
     // The field is `key`, not `path`, because `SettingChangeProposal` in
-    // `src/modules/core/assistant/proposalValidator.ts` reads `input.key` — and
+    // `src/web/assistant/proposalValidator.ts` reads `input.key` — and
     // that validator is what actually gates the write to the user's storage.
     // The accepted key form is the registry's `<storageKey>.<field>`; the
     // catalog's own `path` carries an extra `character.`/`ui.` prefix that

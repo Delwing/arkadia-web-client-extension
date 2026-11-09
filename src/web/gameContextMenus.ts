@@ -1,10 +1,10 @@
-import {mudletColorLine} from "./Colors";
+import {mudletColorLine} from "@client/Colors.ts";
 import type {HerbUse} from "@client/scripts/herbsLoader";
 import {getBindableUses, isHerbSmokable} from "@modules/data/dataStores/herbsStore";
-import {showContextMenu, type ContextMenuEntry} from "@web/contextMenu";
-import {getEmbeddedMap} from "@web/embedRegistry";
-import {characterStorage} from "./storage";
-import {getRoomMenuEntries} from "./pluginUiRegistry";
+import {showContextMenu, type ContextMenuEntry} from "./contextMenu";
+import {getEmbeddedMap} from "./embedRegistry";
+import {characterStorage} from "@modules/core/storage";
+import {getRoomMenuEntries} from "@modules/core/pluginUiRegistry";
 import eventBus from "@modules/core/eventBus";
 import {Flame, Footprints, Info, Leaf, Map as MapIcon, MapPin, Navigation, PackageOpen, Route, StickyNote, Zap} from "lucide-react";
 
@@ -220,10 +220,18 @@ export function roomContextMenuHandler(roomId: number) {
     return (ev: MenuMouseEvent) => {
         ev.preventDefault();
         ev.stopPropagation();
-        openMapContextMenu(roomId, ev.clientX, ev.clientY, [{
-            label: 'Pokaż na mapie',
-            icon: MapIcon,
-            action: () => eventBus.emit('map.centerOn', { roomId }),
-        }]);
+        openRoomContextMenu(roomId, ev.clientX, ev.clientY);
     };
+}
+
+/**
+ * The menu of a room named outside the map (game output, popups): the map's own
+ * menu, plus centring the main map on it. Also the client's `UiPort.showRoomMenu`.
+ */
+export function openRoomContextMenu(roomId: number, x: number, y: number) {
+    openMapContextMenu(roomId, x, y, [{
+        label: 'Pokaż na mapie',
+        icon: MapIcon,
+        action: () => eventBus.emit('map.centerOn', { roomId }),
+    }]);
 }

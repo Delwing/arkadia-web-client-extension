@@ -33,7 +33,7 @@ import type {
     BindProposal,
     SettingChangeProposal,
     TriggerProposal,
-} from '@modules/core/assistant/proposalValidator.ts';
+} from '@web/assistant/proposalValidator.ts';
 import {
     getActiveBindSettings,
     getActiveKeymapId,

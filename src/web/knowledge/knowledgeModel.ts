@@ -4,7 +4,7 @@
  * report, the books report and the recorded level history. Pure functions, so
  * the tabs only render.
  */
-import { KNOWLEDGE_CATEGORY_CONFIG } from '@client/knowledgeCategories';
+import { KNOWLEDGE_CATEGORY_CONFIG } from '@shared/knowledgeCategories.ts';
 import type { KnowledgeDetailsType } from '@modules/data/dataStores/knowledgeDetailsStore';
 import type {
     KnowledgeBookCategoryProgress,

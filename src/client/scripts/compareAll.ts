@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
-import {createColorFormat} from "@modules/core/Colors";
+import {createColorFormat} from "@client/Colors.ts";
 import {parseComparisonStats, type ComparisonStats} from "./comparisonUtils";
 
 export type {ComparisonStats};

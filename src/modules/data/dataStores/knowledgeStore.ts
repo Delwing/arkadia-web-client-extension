@@ -5,7 +5,7 @@ import {
   getFromIndexedDB,
   IndexedDBConfig,
   storeInIndexedDB,
-} from '@client/utils/dataCache';
+} from '@modules/data/dataCache.ts';
 
 export interface KnowledgeBookEntry {
   mianownik: string;

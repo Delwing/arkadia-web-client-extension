@@ -1,4 +1,4 @@
-import {colorCodes} from "@modules/core/Colors.ts";
+import {colorCodes} from "@client/Colors.ts";
 import {cloneColor} from "./colors";
 import type {HexColor, RgbColor, FormatColor} from "./colors";
 import {isDefaultState} from "./formatSnapshot";

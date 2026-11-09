@@ -13,7 +13,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
     let delay = 1;
     let lastDelay = 1;
     let settings: Record<string, unknown> = {};
-    let timer: number | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
     let paused = false;
     let target: number | null = null;
     let pausedByPauser = false;
@@ -110,7 +110,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         }
 
         const time = (delay + (Math.random() * 0.6 - 0.3)) * 1000;
-        timer = window.setTimeout(() => {
+        timer = setTimeout(() => {
             timer = null;
             if (paused || target === null) return;
 

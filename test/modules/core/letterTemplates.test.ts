@@ -9,7 +9,7 @@ import {
     saveCustomLetterTemplates,
 } from '@modules/core/letterTemplates';
 import { BUILTIN_LETTER_LAYOUTS } from '@shared/letterRenderer';
-import type { CustomLetterTemplate } from '@client/types/letter';
+import type { CustomLetterTemplate } from '@shared/types/letter.ts';
 
 const TEMPLATE: CustomLetterTemplate = {
     id: 'abc',

@@ -2,7 +2,7 @@ import Client from "../Client";
 import type {ObjectData} from "../ObjectManager";
 import {refresh as refreshPeopleStore, subscribeMerged} from '@modules/data/peopleLoader';
 import type {PersonListEntry} from '../types/people';
-import {colorString, createColorFormat} from "@modules/core/Colors";
+import {colorString, createColorFormat} from "@client/Colors.ts";
 import {characterStorage} from "@modules/core/storage";
 import {defaultSettings} from "@modules/core/defaultSettings";
 

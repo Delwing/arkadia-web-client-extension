@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {level} from "./comparisonUtils";
-import {createColorFormat} from "@modules/core/Colors";
+import {createColorFormat} from "@client/Colors.ts";
 
 const positiveColor = createColorFormat("#ff0000"); // Red for positive values (you're weaker)
 const negativeColor = createColorFormat("#00ff00"); // Green for negative values (you're stronger)

@@ -2,7 +2,7 @@ import Client from "../Client";
 
 export default function initWorldDestructionTimer(client: Client) {
     const tag = 'world-destruction-timer';
-    let timer: number | null = null;
+    let timer: ReturnType<typeof setInterval> | null = null;
     let end = 0;
 
     function stopTimer() {
@@ -28,7 +28,7 @@ export default function initWorldDestructionTimer(client: Client) {
             clearInterval(timer);
         }
         update();
-        timer = window.setInterval(update, 100);
+        timer = setInterval(update, 100);
     }
 
     // Pattern: "Pamietaj, juz tylko X minut do momentu zniszczenia swiata."

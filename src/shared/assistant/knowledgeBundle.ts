@@ -139,7 +139,7 @@ export interface ProposalSchema {
  * the validator itself.
  *
  * The names are exactly `ProposalKind` in
- * `@modules/core/assistant/proposalValidator` — the module that gates writes to
+ * `@web/assistant/proposalValidator` — the module that gates writes to
  * the user's storage. It is the authority; the generator, the prompt schemas and
  * the Worker all follow it. Because `@modules` pulls in `@client` (and therefore
  * a browser-shaped dependency tree) the Worker cannot import the validator, so

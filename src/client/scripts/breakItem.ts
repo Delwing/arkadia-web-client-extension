@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { createColorFormat } from "@modules/core/Colors";
+import { createColorFormat } from "@client/Colors.ts";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
 export default function initBreakItem(client: Client) {

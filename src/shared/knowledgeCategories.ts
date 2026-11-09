@@ -1,4 +1,4 @@
-import { stripPolishCharacters } from './stripPolishCharacters';
+import { stripPolishCharacters } from '@shared/stripPolishCharacters.ts';
 
 export type KnowledgeCategoryBaseName =
   | 'Chaos i jego twory'

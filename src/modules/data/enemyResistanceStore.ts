@@ -3,7 +3,7 @@ import {
     getFromIndexedDB,
     clearIndexedDB,
     type IndexedDBConfig,
-} from '@client/utils/dataCache';
+} from '@modules/data/dataCache.ts';
 
 export type ResistanceKind = 'odporny' | 'wrazliwy';
 

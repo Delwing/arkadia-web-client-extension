@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, ScrollText, Search, X } from "lucide-react";
 import { canSearchLogs, requestLogSearch } from "@web/logSearchRequest.ts";
 import { clearMatches, findInLines, findInOutput, paintMatches, revealMatch, type OutputMatch } from "./outputSearch";
 import { closeOutputSearch, getOutputSearchRequest, subscribeOutputSearch } from "./outputSearchState";
-import { OUTPUT_BLOCK_CLASS, isOutputLine } from "@shared/dom/outputMessageHandler.ts";
+import { OUTPUT_BLOCK_CLASS, isOutputLine } from "@web/output/outputMessageHandler.ts";
 
 interface OutputSearchBarProps {
     outputWrapper: HTMLElement;

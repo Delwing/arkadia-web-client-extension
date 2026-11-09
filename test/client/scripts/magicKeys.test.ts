@@ -1,5 +1,5 @@
 import initMagicKeys from '@client/scripts/magicKeys';
-import { colorTokenInLine } from '@modules/core/Colors';
+import { colorTokenInLine } from '@client/Colors.ts';
 import { MAGIC_KEYS_COLOR as KEYS_COLOR } from '@client/constants/colors';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 

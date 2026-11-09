@@ -2,11 +2,11 @@
  * Books: names in the output coloured and linked by how much of them was read,
  * reading progress from the game's lines, and the books window.
  */
-import {createColorFormat, mudletColorLine} from '@modules/core/Colors';
+import {createColorFormat, mudletColorLine} from '@client/Colors.ts';
 import type {KnowledgeBookEntry} from '@modules/data/dataStores/knowledgeStore';
 import {getUiPort, type BookCategoryState} from '@client/ports';
 import {buildBookContextMenuItems, getBookCategoryStates, getBookOverallStatus} from '@client/bookProgress.ts';
-import {getBaseCategoryFromName} from '../../knowledgeCategories';
+import {getBaseCategoryFromName} from '@shared/knowledgeCategories.ts';
 import type {KnowledgeContext} from './context';
 import {recolorToken} from './highlight';
 import {KNOWLEDGE_BOOK_COMPLETE_PATTERN, KNOWLEDGE_BOOK_START_PATTERN} from './parsing';
@@ -79,7 +79,7 @@ export function createKnowledgeBooks(ctx: KnowledgeContext): KnowledgeBooks {
         const resolvedCategory = resolveBookCategory(book, category);
         if (resolvedCategory) {
             setBookProgress(bookKey, resolvedCategory, status);
-            window.setTimeout(() => dispatchReport(), 50);
+            setTimeout(() => dispatchReport(), 50);
         }
     }
 
@@ -116,7 +116,7 @@ export function createKnowledgeBooks(ctx: KnowledgeContext): KnowledgeBooks {
             // The category comes from the book's own list, so it is used as is
             const bookProg = ctx.snapshot?.data.bookProgress?.[ctx.characterKey()]?.[action.bookKey] ?? {};
             setBookProgress(action.bookKey, action.category, !findBookProgValue(bookProg, action.category));
-            window.setTimeout(() => dispatchReport(), 50);
+            setTimeout(() => dispatchReport(), 50);
         }
     });
 

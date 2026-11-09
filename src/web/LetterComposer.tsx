@@ -9,7 +9,7 @@ import {
     LETTER_TEMPLATE_DEFINITIONS,
     type CustomLetterTemplate,
     type LetterTemplateId,
-} from "@client/types/letter";
+} from "@shared/types/letter.ts";
 import {
     MAX_LINE_WIDTH,
     MIN_LINE_WIDTH,

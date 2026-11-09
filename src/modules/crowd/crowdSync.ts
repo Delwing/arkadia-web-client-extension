@@ -15,7 +15,7 @@
 import { getBehaviorSettings, onBehaviorSettingsChange } from '@modules/core/settings';
 import { ensureZlomLoaded, getZlomSnapshot, subscribeZlom, type ZlomEntry } from '@modules/data/zlomStore';
 import { ensureOdmianaLoaded, getOdmianaSnapshot, subscribeOdmiana } from '@modules/data/odmianaStore';
-import { getFromIndexedDB, storeInIndexedDB, type IndexedDBConfig } from '@client/utils/dataCache';
+import { getFromIndexedDB, storeInIndexedDB, type IndexedDBConfig } from '@modules/data/dataCache.ts';
 import { characterStorage, globalStorage } from '@modules/core/storage';
 import { CROWD_WORKER_URL } from './crowdConfig';
 import {

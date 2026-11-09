@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { colorString, createColorFormat } from "@modules/core/Colors";
+import { colorString, createColorFormat } from "@client/Colors.ts";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
 import { createBindMessage, formatLabel } from "./functionalBind";

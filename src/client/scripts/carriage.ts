@@ -3,10 +3,10 @@ import {isType} from "../Triggers";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {characterStorage} from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus.ts";
-import {createColorFormat} from "@modules/core/Colors";
+import {createColorFormat} from "@client/Colors.ts";
 import {getBehaviorSettings} from "@modules/core/settings";
 import {getLongDir, isDirection} from "@shared/map/directions";
-import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import {roomContextMenuHandler} from "../roomContextMenu";
 
 const STORAGE_KEY = 'carriages';
 

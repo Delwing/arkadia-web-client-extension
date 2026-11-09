@@ -10,7 +10,7 @@ interface ZaskTimerPayload {
 }
 
 export default function initZaskTimer(client: Client) {
-    let timer: number | null = null;
+    let timer: ReturnType<typeof setInterval> | null = null;
     let start = 0;
     let active = false;
 
@@ -52,7 +52,7 @@ export default function initZaskTimer(client: Client) {
         active = true;
         clearTimer();
         updateTimer();
-        timer = window.setInterval(updateTimer, 1000);
+        timer = setInterval(updateTimer, 1000);
     }
 
     // Moves sent as `przemknij ...` without the move mode toggle (typed, walk

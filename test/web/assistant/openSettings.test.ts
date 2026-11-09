@@ -26,7 +26,7 @@ import {
 import { SETTINGS_GROUP_LABELS, settingsCategoryByLabel } from '@web/settings/categories.ts';
 import bundleJson from '../../../public/assistant-kb.json';
 import type { KnowledgeBundle } from '@shared/assistant/knowledgeBundle.ts';
-import { validateProposal } from '@modules/core/assistant/proposalValidator.ts';
+import { validateProposal } from '@web/assistant/proposalValidator.ts';
 
 const bundleSettings = (bundleJson as unknown as KnowledgeBundle).settings;
 

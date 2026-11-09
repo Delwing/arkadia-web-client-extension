@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {createColorFormat} from "@modules/core/Colors";
+import {createColorFormat} from "@client/Colors.ts";
 import { subscribe as subscribeToPeopleStore, refresh as refreshPeopleStore } from '@modules/data/peopleStore';
 import type { PersonEntry } from '../types/people';
 import {AnsiAwareBuffer} from "../ansi/FormatState";

@@ -1,5 +1,5 @@
 import {addLocalNpc} from "@modules/data/npcStore";
-import {createColorFormat} from "@modules/core/Colors";
+import {createColorFormat} from "@client/Colors.ts";
 import Client from "./Client";
 import {Trigger} from "./Triggers";
 import toTitleCase from "./utils/toTitleCase";
@@ -7,6 +7,7 @@ import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {containerAction} from "@client/scripts/bagManager";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
+import { getHostPort } from "./ports";
 
 const tag = "packageHelper";
 const pickCommand = "wybierz paczke"
@@ -45,7 +46,7 @@ export default function initPackageHelper(client: Client) {
 
     let packages: { name: string; time?: string; distance?: number }[] = [];
     let listTime = 0;
-    let timer: number | undefined;
+    let timer: ReturnType<typeof setInterval> | undefined;
     let remover = () => {};
     let locationListener: ((payload: { id?: number }) => void) | undefined;
     let locationSubscription: (() => void) | undefined;
@@ -180,18 +181,13 @@ export default function initPackageHelper(client: Client) {
         };
     }
 
-    function isMobileBrowser() {
-        return typeof navigator !== 'undefined' &&
-            /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    }
-
     function packageTableCallback() {
         const lineCallback = packageLineCallback();
         const widthLimit = 78;
         return (line: AnsiAwareBuffer) => {
             onPackageList();
             const lines = line.splitLines();
-            const narrow = isMobileBrowser() ||
+            const narrow = getHostPort().platform.isMobile ||
                 (client.contentWidth && client.contentWidth < widthLimit);
             if (narrow) {
                 const originalFormatting = lines.length > 0 ? lines[0].getStateAt(0) : undefined;
@@ -400,7 +396,7 @@ export default function initPackageHelper(client: Client) {
             }
         }
         update()
-        timer = window.setInterval(update, 1000)
+        timer = setInterval(update, 1000)
     }
 
     function stopTimer() {

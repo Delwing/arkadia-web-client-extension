@@ -6,13 +6,13 @@ import {
   RefreshMetadata,
   StorageStrategy,
 } from '@modules/data/dataStore/types';
-import {stripPolishCharacters} from '@client/stripPolishCharacters';
+import {stripPolishCharacters} from '@shared/stripPolishCharacters.ts';
 import {
   getBaseCategoryFromName,
   KNOWLEDGE_CATEGORY_ORDER,
   KnowledgeCategoryBaseName,
-} from '@client/knowledgeCategories';
-import loadWiedza from '@client/scripts/wiedzaLoader';
+} from '@shared/knowledgeCategories.ts';
+import loadWiedza from '@modules/data/wiedzaLoader.ts';
 import {
   KnowledgeDetailsType,
   KNOWLEDGE_DETAILS_TYPES,

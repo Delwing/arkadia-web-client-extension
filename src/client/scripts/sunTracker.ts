@@ -1,7 +1,7 @@
 import Client from "../Client";
 import {characterStorage} from "@modules/core/storage";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
-import {createColorFormat} from "@modules/core/Colors.ts";
+import {createColorFormat} from "@client/Colors.ts";
 import {defaultSettings, type SunAnnouncement} from "@modules/core/defaultSettings";
 
 type Domain = "Empire" | "Ishtar";
@@ -178,7 +178,7 @@ const DOMAIN_NAMES: Record<Domain, string> = { Empire: "Imperium", Ishtar: "Isht
 export default function initSunTracker(client: Client) {
     let mode: SunAnnouncement = "off";
     let pendingEvent: PendingSunEvent | null = null;
-    let pendingTimer: number | null = null;
+    let pendingTimer: ReturnType<typeof setTimeout> | null = null;
     function clearPending(): void {
         if (pendingTimer !== null) {
             clearTimeout(pendingTimer);
@@ -190,7 +190,7 @@ export default function initSunTracker(client: Client) {
     function setPending(domain: Domain, type: SunEventType, dayOfYear: number, observedHour: number): void {
         clearPending();
         pendingEvent = { domain, type, dayOfYear, observedHour, timestamp: Date.now() };
-        pendingTimer = window.setTimeout(() => {
+        pendingTimer = setTimeout(() => {
             pendingEvent = null;
             pendingTimer = null;
         }, CONFIRM_TIMEOUT);

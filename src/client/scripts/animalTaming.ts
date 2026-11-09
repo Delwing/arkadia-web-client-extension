@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { createColorFormat } from "@modules/core/Colors";
+import { createColorFormat } from "@client/Colors.ts";
 import { AnsiAwareBuffer, FormatStateSnapshot } from "../ansi/FormatState";
 
 /** Hex color per taming level (1-based index maps via value - 1). */

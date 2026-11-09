@@ -1,5 +1,5 @@
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
-import {createSplitViewController} from "./splitViewController";
+import {createSplitViewController} from "@shared/dom/splitViewController.ts";
 
 export type MessageHandlerClient = {
     on(event: 'message', listener: (message?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => void): void;

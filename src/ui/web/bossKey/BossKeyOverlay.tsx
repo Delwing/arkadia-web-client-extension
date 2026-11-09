@@ -2,7 +2,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 
 import { createPortal } from "react-dom";
 import type Client from "@client/Client";
 import eventBus from "@modules/core/eventBus";
-import { readableTextOf } from "@shared/dom/outputText";
+import { readableTextOf } from "@web/output/outputText.ts";
 import { getActiveCommandLine } from "@web/commandInput/activeCommandLine";
 import { useClientEvent } from "../hooks";
 import { isBossKeyActive, isPanicKey, onBossKeyChange, setBossKeyActive, toggleBossKey } from "./bossKeyState";

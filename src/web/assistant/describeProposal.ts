@@ -9,7 +9,7 @@
 import { characterStorage } from '@modules/core/storage.ts';
 import type { Settings } from '@modules/core/defaultSettings.ts';
 import { lookupSetting } from '@modules/core/assistant/settingsRegistry.ts';
-import type { AssistantProposal } from '@modules/core/assistant/proposalValidator.ts';
+import type { AssistantProposal } from '@web/assistant/proposalValidator.ts';
 import { triggerMsgTypes } from '@client/scripts/userTriggers.ts';
 import { getActiveBindSettings } from '@modules/core/keymapStorage.ts';
 import { describeBind, findBindConflicts, type BindConflict } from '@modules/core/bindConflicts.ts';

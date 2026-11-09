@@ -17,7 +17,7 @@ import {getMapSettings, getDeviceViewSettings, setDeviceViewSettings, getBehavio
 import eventBus from "@modules/core/eventBus";
 import {getBuiltInPanelSetting, loadLayoutState} from "./layout/utils/layoutStorage";
 import { showMapNoteTooltipForRoom, hideMapNoteTooltip } from "./mapNoteTooltip";
-import { openMapContextMenu } from "@modules/core/contextMenus";
+import { openMapContextMenu } from "@web/gameContextMenus.ts";
 import { PulseOverlay } from "./pulseOverlay";
 import { TransportHopsOverlay, type TransportHopMarker } from "./transportHopsOverlay";
 import { ParkedCarriagesOverlay, type ParkedCarriageMarker } from "./parkedCarriagesOverlay";

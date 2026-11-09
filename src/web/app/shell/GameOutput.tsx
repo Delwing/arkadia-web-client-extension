@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef } from "react";
 import { globalStorage } from "@modules/core/storage.ts";
 import eventBus from "@modules/core/eventBus";
 import { getDeviceViewSettings, getRenderSettings, onRenderSettingsChange } from "@modules/core/settings";
-import { setOutputTimestampVisibility, setupOutputMessageHandler } from "@shared/dom/outputMessageHandler.ts";
+import { setOutputTimestampVisibility, setupOutputMessageHandler } from "@web/output/outputMessageHandler.ts";
 import { createCharPlaqueFeed } from "@shared/dom/charPlaque.ts";
 import mudClient from "@web/MudClient.ts";
 import { setupOutputContextMenu } from "@web/outputContextMenu.tsx";

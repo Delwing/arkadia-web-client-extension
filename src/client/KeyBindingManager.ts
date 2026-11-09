@@ -6,6 +6,7 @@ import { getPluginKeyActions, pluginKeyBindOf } from "@modules/core/pluginKeyReg
 import { switchKeymap, getActiveKeymapId } from "@modules/core/keymapStorage";
 import type { HelperConnection } from "@modules/helper/HelperConnection";
 import type { HotkeyMsg } from "@modules/helper/helperProtocol";
+import { getHostPort } from "./ports";
 
 const DOUBLE_PRESS_WINDOW_MS = 1000;
 const DOUBLE_K_COMMAND = '+k';
@@ -122,7 +123,7 @@ export default class KeyBindingManager {
     }
 
     private setupKeydownListener() {
-        window.addEventListener('keydown', (ev) => {
+        getHostPort().onKeyDown((ev) => {
             if (bindMatches(ev, this.lampBind)) {
                 this.client.sendCommand('napelnij lampe olejem');
                 ev.preventDefault();
@@ -191,7 +192,9 @@ export default class KeyBindingManager {
                 if (!bind || !bindMatches(ev, bind)) continue;
                 ev.preventDefault();
                 try {
-                    action.onPress(ev);
+                    // The plugin API promises a KeyboardEvent; the browser host passes the
+                    // page's own, and a headless host has no plugin keys to press.
+                    action.onPress(ev as KeyboardEvent);
                 } catch (error) {
                     console.error(`[KeyBindingManager] Plugin key action "${action.id}" failed:`, error);
                 }

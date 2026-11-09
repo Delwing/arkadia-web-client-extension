@@ -2,6 +2,7 @@ import Client from "../Client";
 import {PluginManager} from "../PluginManager";
 import {getAllStoredPluginIds} from "../utils/pluginStorage";
 import {globalStorage} from "@modules/core/storage";
+import { getHostPort } from "../ports";
 
 const STORAGE_KEY = "scripts";
 const STORED_SCRIPTS_KEY = "stored_scripts";
@@ -39,7 +40,8 @@ export default function initExternalScripts(client: Client) {
         }
     };
 
-    const param = new URLSearchParams(window.location.search).get("add-script");
+    const host = getHostPort();
+    const param = host.getLaunchParam("add-script");
     let handled = false;
 
     const checkParam = () => {
@@ -50,11 +52,7 @@ export default function initExternalScripts(client: Client) {
             globalStorage.set(STORAGE_KEY, known);
             apply(known, knownStored);
         }
-        const params = new URLSearchParams(window.location.search);
-        params.delete("add-script");
-        const base = window.location.origin + window.location.pathname;
-        const rest = params.toString();
-        window.location.replace(rest ? `${base}?${rest}` : base);
+        host.clearLaunchParam("add-script");
     };
 
     // Load initial scripts from storage
@@ -79,10 +77,8 @@ export default function initExternalScripts(client: Client) {
     loadStoredPluginsFromDB();
 
     // Listen for storage events from other windows (like the editor)
-    window.addEventListener('storage', (e) => {
-        if (e.key === 'stored_scripts_updated') {
-            loadStoredPluginsFromDB();
-        }
+    host.onStorageChange('stored_scripts_updated', () => {
+        loadStoredPluginsFromDB();
     });
 
     // Return plugin manager for access by other modules

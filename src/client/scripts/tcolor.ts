@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {colorTokenInLine, colorStringInLine} from "@modules/core/Colors";
+import {colorTokenInLine, colorStringInLine} from "@client/Colors.ts";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 import {ORANGE_COLOR} from "../constants/colors";
 export default function initTcolor(client: Client, aliases: Client['aliases']) {

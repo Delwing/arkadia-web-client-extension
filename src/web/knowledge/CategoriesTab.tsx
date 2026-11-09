@@ -15,7 +15,7 @@ import {
     type EntryFilter,
 } from './knowledgeModel';
 import { areaOfRoom, leadToLibrary } from './useKnowledgeData';
-import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import {roomContextMenuHandler} from "@web/gameContextMenus.ts";
 
 const SOURCE_ICONS: Record<KnowledgeDetailsType, LucideIcon> = {
     fight: Swords,

@@ -1,6 +1,7 @@
 import Client from "../Client";
 import {bindMatches} from "@modules/core/keymapTypes";
-import {stripPolishCharacters} from "../stripPolishCharacters";
+import {stripPolishCharacters} from "@shared/stripPolishCharacters.ts";
+import { getHostPort } from "../ports";
 
 const LABELS = ["zwykły", "prz", "prz dr"];
 const TITLES = ["zwykły", "przemknij", "przemknij z drużyną"];
@@ -73,7 +74,7 @@ export default function initMoveMode(client: Client) {
         }
     }
 
-    window.addEventListener('keydown', (ev) => {
+    getHostPort().onKeyDown((ev) => {
         if (bindMatches(ev, client.moveModeBind)) {
             toggle(true);
             ev.preventDefault();

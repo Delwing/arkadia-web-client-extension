@@ -62,8 +62,8 @@ export interface LoadedPlugin {
   apiInstance?: any // PluginApiImpl, but avoiding circular dependency
   /** The plugin's accepted stableId, which its saved state is kept under */
   stableId?: string
-  /** Script element (for legacy scripts loaded via URL) */
-  scriptElement?: HTMLScriptElement
+  /** The host's handle on a legacy script loaded via URL (see HostPort.loadScript) */
+  scriptHandle?: unknown
   /** Timestamp when plugin was loaded */
   loadedAt: number
 }

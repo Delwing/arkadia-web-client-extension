@@ -10,13 +10,13 @@ export default function initNoWeaponAlert(client: Client) {
     const tag = 'no-weapon-alert';
     const patterns = UNARMED_ATTACK_PATTERNS;
 
-    let timer: number | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
 
     function alert(line: any) {
         if (timer !== null) {
             return line;
         }
-        timer = window.setTimeout(() => {
+        timer = setTimeout(() => {
             timer = null;
         }, 5000);
         const msg = new AnsiAwareBuffer();

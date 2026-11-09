@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button, DeleteButton, Dialog, Field, Input, Select, TextArea } from '@web-ui/primitives';
-import type { CustomLetterTemplate, LetterTemplateId } from '@client/types/letter.ts';
+import type { CustomLetterTemplate, LetterTemplateId } from '@shared/types/letter.ts';
 import {
     createCustomLetterTemplateId,
     customLetterTemplateValue,

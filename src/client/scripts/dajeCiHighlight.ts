@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {createColorFormat} from "@modules/core/Colors";
+import {createColorFormat} from "@client/Colors.ts";
 
 export default function initDajeCiHighlight(client: Client) {
     const TURQUOISE = createColorFormat("#40e0d0");

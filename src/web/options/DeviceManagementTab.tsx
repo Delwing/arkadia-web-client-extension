@@ -7,7 +7,6 @@ import {
     setDeviceCustomName,
     getImportedDevices,
     deleteImportedDevice,
-    applyImportedDeviceSettings,
     getDeviceDisplayName,
     getSyncGroup,
     setSyncGroup,
@@ -17,6 +16,7 @@ import {
     type ImportedDeviceEntry,
     type SyncGroup,
 } from "@modules/device";
+import { applyImportedDeviceSettings } from "@web/deviceSettingsReload.ts";
 import {
     createSyncGroup,
     joinSyncGroup,

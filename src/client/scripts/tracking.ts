@@ -1,25 +1,16 @@
 import Client from "../Client";
-import {colorTokenInLine, createColorFormat} from "@modules/core/Colors";
+import {colorTokenInLine, createColorFormat} from "@client/Colors.ts";
 import {printArrow} from "./printArrow";
-import {FormatStateSnapshot} from "@client/ansi/FormatState";
+import {AnsiAwareBuffer, type FormatStateSnapshot} from "@client/ansi/FormatState";
 
 const SURE_WITH_TRACE_COLOR = createColorFormat('#00ff00'); // green
 const UNSURE_COLOR = createColorFormat('#ffff00'); // yellow
 const SURE_COLOR = createColorFormat('#4169e1'); // royal blue
 const NOT_FOUND_COLOR = createColorFormat('#ff0000'); // red
 
-// Helper to prepend colored text to a DOM container
+// Prepend colored text to a line the UI has already rendered (handed over by onRender)
 function prependToContainer(container: HTMLElement, text: string, color: FormatStateSnapshot): void {
-    const span = document.createElement('span');
-    span.textContent = text;
-    if (color.foreground) {
-        if (color.foreground.space === 'hex') {
-            span.style.color = color.foreground.color;
-        } else if (color.foreground.space === 'rgb') {
-            span.style.color = `rgb(${color.foreground.r}, ${color.foreground.g}, ${color.foreground.b})`;
-        }
-    }
-    container.insertBefore(span, container.firstChild);
+    container.insertBefore(new AnsiAwareBuffer(text, color).toDom(), container.firstChild);
 }
 
 export default function initTracking(client: Client) {

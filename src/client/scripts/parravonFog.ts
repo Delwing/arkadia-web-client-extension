@@ -1,7 +1,7 @@
 import Client from "../Client";
 import {matchWhen} from "@client/Triggers.ts";
 import {getLongDir, getShortDir, isDirection, polishToEnglish} from "@shared/map/directions";
-import {colorString, createColorFormat} from "@modules/core/Colors";
+import {colorString, createColorFormat} from "@client/Colors.ts";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import {globalStorage} from "@modules/core/storage";

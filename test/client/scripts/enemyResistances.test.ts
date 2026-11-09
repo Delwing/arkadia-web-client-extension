@@ -13,7 +13,7 @@ import {
     groupEnemyResistances,
     __resetEnemyResistanceStoreForTests,
 } from '@modules/data/enemyResistanceStore';
-import { storeInIndexedDB, getFromIndexedDB } from '@client/utils/dataCache';
+import { storeInIndexedDB, getFromIndexedDB } from '@modules/data/dataCache.ts';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { characterStorage } from '@modules/core/storage';

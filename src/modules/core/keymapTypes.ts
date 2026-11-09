@@ -143,7 +143,7 @@ export const DEFAULT_KEYMAP_NAME = 'Domyślna';
 /**
  * Check whether a KeyboardEvent matches a Bind.
  */
-export function bindMatches(ev: KeyboardEvent, bind: Bind): boolean {
+export function bindMatches(ev: Pick<KeyboardEvent, "code" | "key" | "ctrlKey" | "altKey" | "shiftKey">, bind: Bind): boolean {
     const matchesKey = bindCodeOf(ev) === bind.key || ev.key === bind.key.toLowerCase()
     if (!matchesKey) return false
     return !!bind.ctrl === ev.ctrlKey && !!bind.alt === ev.altKey && !!bind.shift === ev.shiftKey

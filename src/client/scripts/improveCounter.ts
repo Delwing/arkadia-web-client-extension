@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {colorString, createColorFormat} from "@modules/core/Colors";
+import {colorString, createColorFormat} from "@client/Colors.ts";
 import {characterStorage} from "@modules/core/storage";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
@@ -15,6 +15,7 @@ import {
     type ImproveEntry,
     type LifetimeDay,
 } from "@shared/improveProgress.ts";
+import { getHostPort } from "../ports";
 
 export type {ImproveEntry} from "@shared/improveProgress.ts";
 
@@ -226,7 +227,7 @@ export default class ImproveCounter extends BaseCounter {
             eventBus.emit("postepy2.updated");
         });
 
-        window.addEventListener("beforeunload", this.persist);
+        getHostPort().onUnload(this.persist);
 
         this.client.on("gmcp.char.state", (state) => {
             if (typeof state.form === "number") {

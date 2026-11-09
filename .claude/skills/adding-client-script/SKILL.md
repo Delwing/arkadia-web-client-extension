@@ -86,7 +86,7 @@ For raw GMCP, the `Client` re-emits everything as events: `client.on('gmcp.objec
 This is the single most common bug when assembling colored output with `AnsiAwareBuffer`.
 
 ```ts
-import { colorString, createColorFormat } from "@modules/core/Colors";
+import { colorString, createColorFormat } from "@client/Colors.ts";
 import { AnsiAwareBuffer, FormatStateSnapshot } from "@client/ansi/FormatState.ts";
 
 const ORANGE = createColorFormat("#ffa500");

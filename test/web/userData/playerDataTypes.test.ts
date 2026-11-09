@@ -22,7 +22,7 @@ import {
     setAnimalActive,
 } from '@client/scripts/oswajanie';
 import initDeliveryStats, { addDeliveryRecords, readDeliveryRecords, type DeliveryRecord } from '@client/scripts/deliveryStats';
-import { clearIndexedDB, getIndexedDBKeys } from '@client/utils/dataCache';
+import { clearIndexedDB, getIndexedDBKeys } from '@modules/data/dataCache.ts';
 import {
     clearTransportStats,
     deleteTransportSegment,

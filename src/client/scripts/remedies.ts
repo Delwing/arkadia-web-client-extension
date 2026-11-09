@@ -1,6 +1,6 @@
 import Client from "../Client";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
-import { createColorFormat } from "@modules/core/Colors";
+import { createColorFormat } from "@client/Colors.ts";
 import { getHerbManager } from "@modules/core/herbManagerProvider";
 
 /**

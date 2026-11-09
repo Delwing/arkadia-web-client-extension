@@ -2,16 +2,16 @@ import Client from "../Client";
 import { createAttackController } from "../utils/attackController";
 import { subscribeMerged, refresh as refreshPeopleStore } from '@modules/data/peopleLoader';
 import type { PersonListEntry } from '../types/people';
-import { colorString, createColorFormat } from '@modules/core/Colors';
+import { colorString, createColorFormat } from '@client/Colors.ts';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { globalStorage, characterStorage } from '@modules/core/storage';
 import { defaultSettings } from '@modules/core/defaultSettings';
 import { type Bind, bindMatches } from '@modules/core/keymapTypes';
 import { enemyBindResolvers } from './enemyBindResolvers';
 import { enemyBindSteps, enemyBindCommandLabel } from '../utils/enemyBindCommand';
+import { getHostPort } from "../ports";
+import { altKeyLabel } from "../keyLabels";
 
-const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
-const ALT_LABEL = isMac ? '⌥' : 'ALT';
 
 const NUM_SLOTS = 3;
 const ORANGE = createColorFormat('#ff8800');
@@ -163,7 +163,7 @@ export default function initEnemyBinds(
         else if (key === 'Backquote') key = '`';
         const parts: string[] = [];
         if (bind.ctrl) parts.push('CTRL');
-        if (bind.alt) parts.push(ALT_LABEL);
+        if (bind.alt) parts.push(altKeyLabel());
         if (bind.shift) parts.push('SHIFT');
         parts.push(key);
         return parts.join('+');
@@ -308,7 +308,7 @@ export default function initEnemyBinds(
     });
 
     // Set up keyboard event listeners for enemy binds
-    window.addEventListener('keydown', (ev) => {
+    getHostPort().onKeyDown((ev) => {
         for (let index = 0; index < NUM_SLOTS; index++) {
             const bind = enemyBindKeys[index];
 
@@ -324,7 +324,7 @@ export default function initEnemyBinds(
     });
 
     // Enemy block binds for zablokuj
-    window.addEventListener('keydown', (ev) => {
+    getHostPort().onKeyDown((ev) => {
         for (let index = 0; index < NUM_SLOTS; index++) {
             const bind = enemyBlockBindKeys[index];
 

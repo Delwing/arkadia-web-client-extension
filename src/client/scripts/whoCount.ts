@@ -1,6 +1,6 @@
 import Client from "../Client";
 import { polishWordToNumber, polishNumberPattern } from "./polishNumberConverter";
-import { createColorFormat } from "@modules/core/Colors";
+import { createColorFormat } from "@client/Colors.ts";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 import { getMergedSnapshot } from "@modules/data/peopleLoader";
 import { characterStorage } from "@modules/core/storage";

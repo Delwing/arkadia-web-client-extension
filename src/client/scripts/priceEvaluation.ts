@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {colorString} from "@modules/core/Colors";
+import {colorString} from "@client/Colors.ts";
 import {MITHRIL_COLOR, GOLD_COLOR, SILVER_COLOR, COPPER_COLOR} from "../constants/colors";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 

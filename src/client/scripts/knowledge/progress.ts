@@ -14,7 +14,7 @@ import {
     KnowledgeDetailsType,
     KnowledgeEntriesMap,
 } from '@modules/data/dataStores/knowledgeDetailsStore';
-import type {KnowledgeCategoryBaseName} from '../../knowledgeCategories';
+import type {KnowledgeCategoryBaseName} from '@shared/knowledgeCategories.ts';
 import {normalizeKnowledgeEntry} from './parsing';
 
 export type BookProgressStatus = true | 'in_progress';

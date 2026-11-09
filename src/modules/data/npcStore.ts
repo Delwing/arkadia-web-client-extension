@@ -15,7 +15,7 @@ import {
   getFromIndexedDB,
   IndexedDBConfig,
   storeInIndexedDB,
-} from '@client/utils/dataCache';
+} from '@modules/data/dataCache.ts';
 
 const NPC_DATA_URL = 'https://delwing.github.io/arkadia-mapa/data/npc.json';
 const TTL_MS = 24 * 60 * 60 * 1000;

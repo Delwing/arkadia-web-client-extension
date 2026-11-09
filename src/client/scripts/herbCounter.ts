@@ -6,8 +6,7 @@ import {
     parseHerbBagContent,
 } from "./herbBags";
 import loadHerbs, {HerbsData, isHerbSmokable} from "./herbsLoader";
-import {colorString, createColorFormat, mudletColorLine} from "@modules/core/Colors";
-import {openHerbContextMenu} from "@modules/core/contextMenus";
+import {colorString, createColorFormat, mudletColorLine} from "@client/Colors.ts";
 import type {HerbManagerApi, HerbMoveOptions, HerbBagsState, HerbBagState, HerbGiveItem, HerbGiveResult, HerbGiveTarget} from "../types/herbs";
 import {clampHerbBagCondition, normalizeHerbBagsState} from "../types/herbs";
 import {registerHerbManagerProvider} from "@modules/core/herbManagerProvider";
@@ -184,13 +183,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     let packTimeout: ReturnType<typeof setTimeout> | undefined;
 
     const showHerbActions = (id: string, ev: MouseEvent) => {
-        openHerbContextMenu({
-            herbId: id,
-            actions: herbs?.herb_id_to_use[id],
-            x: ev.pageX,
-            y: ev.pageY,
-            commandPrefix: '/zi',
-        });
+        getUiPort().showHerbMenu?.(id, herbs?.herb_id_to_use[id], ev.pageX, ev.pageY, '/zi');
     };
 
     const formatHerbName = (herbId: string, amount = 1): string => {

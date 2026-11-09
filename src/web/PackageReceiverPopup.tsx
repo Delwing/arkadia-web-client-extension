@@ -5,7 +5,7 @@ import { useClientEvent } from '@web-ui/hooks';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { getEmbeddedMap, subscribeEmbeddedMap } from './embedRegistry';
-import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import {roomContextMenuHandler} from "@web/gameContextMenus.ts";
 import {
     NpcListEntry,
     clearLocal,

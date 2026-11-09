@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {colorString, createColorFormat} from "@modules/core/Colors";
+import {colorString, createColorFormat} from "@client/Colors.ts";
 import {AnsiAwareBuffer, TextRange, DimEasing} from "@client/ansi/FormatState";
 import {Trigger} from "../Triggers";
 import {executeTriggerMacro} from "@modules/core/pluginTriggerMacroRegistry";

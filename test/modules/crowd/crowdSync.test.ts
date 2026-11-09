@@ -3,7 +3,7 @@ import { syncOnce, withdrawCrowdIgnore } from '@modules/crowd/crowdSync';
 import { getBehaviorSettings } from '@modules/core/settings';
 import { __resetZlomStoreForTests, updateZlomSnapshot } from '@modules/data/zlomStore';
 import { __resetOdmianaStoreForTests, saveOdmiana } from '@modules/data/odmianaStore';
-import { clearIndexedDB } from '@client/utils/dataCache';
+import { clearIndexedDB } from '@modules/data/dataCache.ts';
 import { characterStorage, globalStorage } from '@modules/core/storage';
 import { adoptCrowdCredentials, loadCrowdCredentials, loadRetiredCrowdCredentials } from '@modules/crowd/crowdCredentials';
 

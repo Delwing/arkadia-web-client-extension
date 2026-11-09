@@ -19,7 +19,7 @@ import {
     type SettingChangeProposal,
     type TriggerProposal,
     type ValidationResult,
-} from '@modules/core/assistant/proposalValidator';
+} from '@web/assistant/proposalValidator.ts';
 
 // Polish letters are built from escapes so this test file, like the module it
 // covers, keeps literal diacritics out of anything regex-shaped.

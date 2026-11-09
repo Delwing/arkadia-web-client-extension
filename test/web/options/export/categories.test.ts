@@ -28,6 +28,10 @@ vi.mock('@modules/core/eventBus', () => ({
     default: { emit: jest.fn() },
 }));
 
+vi.mock('@web/deviceSettingsReload.ts', () => ({
+    triggerSettingsReload: jest.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('@modules/device', () => ({
     getDeviceInfo: jest.fn(() => ({
         id: 'test-device',
@@ -38,7 +42,6 @@ vi.mock('@modules/device', () => ({
     })),
     saveImportedDevice: jest.fn(),
     getSyncGroup: jest.fn(() => null),
-    triggerSettingsReload: jest.fn().mockResolvedValue(undefined),
     shouldApplyDeviceSettings: jest.fn(() => false),
     isCategoryDeviceScoped: jest.fn(() => false),
 }));

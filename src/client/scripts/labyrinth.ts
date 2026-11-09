@@ -1,7 +1,7 @@
 import Client from "../Client";
 import {matchWhen} from "@client/Triggers.ts";
 import {getLongDir, isDirection, isPolishDirection} from "@shared/map/directions";
-import {stripPolishCharacters} from "../stripPolishCharacters";
+import {stripPolishCharacters} from "@shared/stripPolishCharacters.ts";
 import eventBus from "@modules/core/eventBus";
 
 const LABYRINTH_ENV = 266;

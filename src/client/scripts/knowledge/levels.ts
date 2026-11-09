@@ -3,7 +3,7 @@
  * `wiedza` command's list gets a bar per category with the ticks since its level
  * last changed. The levels it reports are stored for the details window.
  */
-import {createColorFormat} from '@modules/core/Colors';
+import {createColorFormat} from '@client/Colors.ts';
 import {
     addKnowledgeEvent,
     getKnowledgeEventsForCharacter,
@@ -16,7 +16,7 @@ import {
     getDativeCategoryName,
     KNOWLEDGE_CATEGORY_CONFIG,
     KnowledgeCategoryBaseName,
-} from '../../knowledgeCategories';
+} from '@shared/knowledgeCategories.ts';
 import type {KnowledgeContext} from './context';
 import type {KnowledgeEntries} from './entries';
 import {
@@ -54,8 +54,8 @@ const MAX_LEVEL_LEN = 12;
 type WiedzaTotalRun = {
     tag: string;
     commandTimestamp: number;
-    inactivityTimer: number | null;
-    abortTimer: number;
+    inactivityTimer: ReturnType<typeof setTimeout> | null;
+    abortTimer: ReturnType<typeof setTimeout>;
     results: Map<KnowledgeCategoryBaseName, string>;
     /** Ticks since each category's last level change. */
     tickCounts: Map<KnowledgeCategoryBaseName, number>;
@@ -113,9 +113,9 @@ export function initKnowledgeLevels(ctx: KnowledgeContext, entries: KnowledgeEnt
         const run = activeRun;
         activeRun = null;
 
-        window.clearTimeout(run.abortTimer);
+        clearTimeout(run.abortTimer);
         if (run.inactivityTimer != null) {
-            window.clearTimeout(run.inactivityTimer);
+            clearTimeout(run.inactivityTimer);
         }
         client.Triggers.removeByTag(run.tag);
 
@@ -165,7 +165,7 @@ export function initKnowledgeLevels(ctx: KnowledgeContext, entries: KnowledgeEnt
             tag,
             commandTimestamp: Date.now(),
             inactivityTimer: null,
-            abortTimer: window.setTimeout(() => finishRun(), WIEDZA_TOTAL_HARD_TIMEOUT),
+            abortTimer: setTimeout(() => finishRun(), WIEDZA_TOTAL_HARD_TIMEOUT),
             results: new Map(),
             tickCounts: new Map(),
             lastLevels: new Map(),
@@ -201,9 +201,9 @@ export function initKnowledgeLevels(ctx: KnowledgeContext, entries: KnowledgeEnt
                 return;
             }
             if (run.inactivityTimer != null) {
-                window.clearTimeout(run.inactivityTimer);
+                clearTimeout(run.inactivityTimer);
             }
-            run.inactivityTimer = window.setTimeout(() => finishRun(), WIEDZA_TOTAL_INACTIVITY_TIMEOUT);
+            run.inactivityTimer = setTimeout(() => finishRun(), WIEDZA_TOTAL_INACTIVITY_TIMEOUT);
         }
 
         scheduleInactivity();

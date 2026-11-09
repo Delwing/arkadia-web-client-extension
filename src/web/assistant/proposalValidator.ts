@@ -29,16 +29,16 @@
  * game commands).
  */
 
-import { stripPolishCharacters } from '@client/stripPolishCharacters';
+import { stripPolishCharacters } from '@shared/stripPolishCharacters.ts';
 import { DIM_EASINGS, isDimEasing } from '@client/ansi/FormatState';
 import { BUILT_IN_MACRO_TYPES, CONDITION_OPERATORS, isBuiltInMacroType, isMacroType, LINELESS_MACRO_TYPES, SUPPORTED_EVENTS, TEXT_STYLES, type BuiltInMacroType, type EventArg, type TriggerCondition, type UserMacro, type UserTrigger } from '@client/scripts/userTriggers';
 import type { UserAlias } from '@client/scripts/userAliases';
-import type { CustomBind } from '../keymapTypes';
+import type { CustomBind } from '@modules/core/keymapTypes.ts';
 import {
     lookupSetting,
     suggestSettingKeys,
     type SettingDescriptor,
-} from './settingsRegistry';
+} from '@modules/core/assistant/settingsRegistry.ts';
 
 export {
     SETTING_DESCRIPTORS,
@@ -46,8 +46,8 @@ export {
     suggestSettingKeys,
     assistantEditableKeys,
     editDistance,
-} from './settingsRegistry';
-export type { SettingDescriptor, SettingScope, SettingLookup, SettingValueType } from './settingsRegistry';
+} from '@modules/core/assistant/settingsRegistry.ts';
+export type { SettingDescriptor, SettingScope, SettingLookup, SettingValueType } from '@modules/core/assistant/settingsRegistry.ts';
 
 // ---------------------------------------------------------------------------
 // Proposal shapes

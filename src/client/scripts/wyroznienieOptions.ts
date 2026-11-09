@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
-import {colorString, createColorFormat} from "@modules/core/Colors";
+import {colorString, createColorFormat} from "@client/Colors.ts";
 
 const TAG = "wyroznienie-options";
 const OPTION_COLOR = createColorFormat("#87ceeb"); // light blue

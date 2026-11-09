@@ -1,13 +1,14 @@
 import Client from "../Client";
 import { prettyPrintContainer, parseItems, getTransformDefinitions, ContainerItem } from "./prettyContainers";
 import { convertCurrency } from "./priceEvaluation";
-import { createColorFormat } from "@modules/core/Colors";
+import { createColorFormat } from "@client/Colors.ts";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
 import { wrapItemLine } from "./counterTableUtils";
 import { getRoomInfo } from "@modules/core/roomInfoProvider";
+import { getHostPort } from "../ports";
 
 const BANK_NAME_COLOR = createColorFormat('#ff6347');
 
@@ -418,7 +419,7 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
         }});
     }
 
-    window.addEventListener("beforeunload", persist);
+    getHostPort().onUnload(persist);
 }
 
 export { deposits };

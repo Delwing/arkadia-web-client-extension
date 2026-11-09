@@ -6,7 +6,7 @@
  */
 
 import { characterStorage, globalStorage } from '@modules/core/storage';
-import { triggerSettingsReload } from '@modules/device/deviceStorage';
+import { triggerSettingsReload } from '@web/deviceSettingsReload.ts';
 import { getKeymapStore, getActiveKeymapId, saveKeymapStore } from '@modules/core/keymapStorage';
 import type { Keymap, KeymapStore } from '@modules/core/keymapTypes';
 import { mergeProfessionStates, type ProfessionState } from '@client/scripts/profession';

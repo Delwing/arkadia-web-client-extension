@@ -16,7 +16,7 @@
  */
 
 import { getBehaviorSettings, onBehaviorSettingsChange } from '@modules/core/settings';
-import { getFromIndexedDB, storeInIndexedDB, type IndexedDBConfig } from '@client/utils/dataCache';
+import { getFromIndexedDB, storeInIndexedDB, type IndexedDBConfig } from '@modules/data/dataCache.ts';
 import { CROWD_WORKER_URL } from './crowdConfig';
 import { withoutStrayAlt } from '@modules/data/zlomStore';
 

@@ -1,9 +1,10 @@
 import Client from "../Client";
 import {scheduleFromEvent} from "@shared/eventClock";
-import { colorString, createColorFormat } from "@modules/core/Colors";
+import { colorString, createColorFormat } from "@client/Colors.ts";
 import { characterStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 import { getDeviceId } from "@modules/firebase/firebaseTypes.ts";
+import { getHostPort } from "../ports";
 
 // This module owns the Oswajanie data layer (IndexedDB), triggers and aliases.
 // The UI is the React component in src/web/OswajaniePopup.tsx, which imports the
@@ -586,15 +587,7 @@ export async function mutateTamingStore<T>(
 }
 
 function downloadJson(content: string, filename: string): void {
-  const blob = new Blob([content], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  getHostPort().saveFile(filename, content, "application/json");
 }
 
 function formatNowForFilename(): string {
@@ -764,57 +757,40 @@ async function replaceDatabase(data: ExportData): Promise<void> {
   });
 }
 
-export function importDatabaseFromFile(): Promise<void> {
-  return new Promise<void>((resolve) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "application/json,.json";
+export async function importDatabaseFromFile(): Promise<void> {
+  const text = await getHostPort().openTextFile("application/json,.json");
+  if (text === null) {
+    printMsg("\n Nie wybrano pliku.\n", "#FFC107");
+    return;
+  }
 
-    input.addEventListener("change", async () => {
-      const file = input.files && input.files[0];
-      if (!file) {
-        printMsg("\n Nie wybrano pliku.\n", "#FFC107");
-        resolve();
-        return;
-      }
+  try {
+    const parsed = JSON.parse(text);
 
-      try {
-        const parsed = JSON.parse(await file.text());
+    if (!parsed || typeof parsed !== "object" || !parsed.meta || !parsed.feeding || !parsed.animals) {
+      throw new Error("Nieprawidlowy format pliku.");
+    }
 
-        if (!parsed || typeof parsed !== "object" || !parsed.meta || !parsed.feeding || !parsed.animals) {
-          throw new Error("Nieprawidlowy format pliku.");
-        }
+    const feeding: FeedingEntry[] = Array.isArray(parsed.feeding) ? parsed.feeding.filter(isValidFeedingEntry) : [];
+    const animals: AnimalLevel[] = Array.isArray(parsed.animals) ? parsed.animals.filter(isValidAnimalLevel) : [];
 
-        const feeding: FeedingEntry[] = Array.isArray(parsed.feeding) ? parsed.feeding.filter(isValidFeedingEntry) : [];
-        const animals: AnimalLevel[] = Array.isArray(parsed.animals) ? parsed.animals.filter(isValidAnimalLevel) : [];
-
-        await replaceDatabase({
-          meta: {
-            plugin: String(parsed.meta.plugin || "oswajanie"),
-            version: String(parsed.meta.version || "unknown"),
-            character: getChar(),
-            exportedAt: String(parsed.meta.exportedAt || new Date().toISOString()),
-            dbVersion: Number(parsed.meta.dbVersion || CONFIG.dbVersion),
-          },
-          feeding,
-          animals,
-        });
-
-        printMsg(`\n Zaimportowano baze (wpisy: karmienie=${feeding.length}, zwierzeta=${animals.length}).\n`, "#4CAF50");
-        notifyUpdated();
-      } catch (e: unknown) {
-        printMsg(`\n Blad importu: ${(e as Error)?.message || e}\n`, "#f44336");
-      } finally {
-        resolve();
-      }
+    await replaceDatabase({
+      meta: {
+        plugin: String(parsed.meta.plugin || "oswajanie"),
+        version: String(parsed.meta.version || "unknown"),
+        character: getChar(),
+        exportedAt: String(parsed.meta.exportedAt || new Date().toISOString()),
+        dbVersion: Number(parsed.meta.dbVersion || CONFIG.dbVersion),
+      },
+      feeding,
+      animals,
     });
 
-    document.body.appendChild(input);
-    input.click();
-    setTimeout(() => {
-      if (input.parentElement) input.parentElement.removeChild(input);
-    }, 0);
-  });
+    printMsg(`\n Zaimportowano baze (wpisy: karmienie=${feeding.length}, zwierzeta=${animals.length}).\n`, "#4CAF50");
+    notifyUpdated();
+  } catch (e: unknown) {
+    printMsg(`\n Blad importu: ${(e as Error)?.message || e}\n`, "#f44336");
+  }
 }
 
 // ============================================================================

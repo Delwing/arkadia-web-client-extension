@@ -1,5 +1,5 @@
 import arkadiaClient from '@web/MudClient';
-import {setupOutputMessageHandler} from '@shared/dom/outputMessageHandler';
+import {setupOutputMessageHandler} from '@web/output/outputMessageHandler.ts';
 
 describe('output performance measurements', () => {
   beforeEach(() => {

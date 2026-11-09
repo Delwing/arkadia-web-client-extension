@@ -5,7 +5,7 @@ import { usePopup } from './hooks/usePopup';
 import { usePopupSetting } from './hooks/usePopupSetting';
 import type { Contract } from '@client/scripts/contracts';
 import { getEmbeddedMap } from './embedRegistry';
-import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import {roomContextMenuHandler} from "@web/gameContextMenus.ts";
 import { Segmented } from '@web-ui/primitives';
 
 interface ContractsPopupPayload {
