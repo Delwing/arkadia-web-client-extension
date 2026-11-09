@@ -1,4 +1,4 @@
-import initStepShadowReport, {SHADOW_MARKER_COLOR} from '@client/scripts/stepShadowReport.ts';
+import initStepQueue, {SHADOW_MARKER_COLOR} from '@client/scripts/stepQueue.ts';
 import {StepShadow} from '@client/map/StepShadow.ts';
 import {setMapSettings} from '@modules/core/settings';
 
@@ -35,10 +35,8 @@ function setup() {
     const client: any = {
         Map: { stepShadow: shadow, createHighlighter, setMapRoomById, getRoomById: (id: number) => rooms[id], currentRoom: rooms[1] },
         Triggers: { registerTrigger: vi.fn() },
-        aliases: [],
-        println: vi.fn(),
     };
-    initStepShadowReport(client);
+    initStepQueue(client);
     return {
         shadow,
         createHighlighter,

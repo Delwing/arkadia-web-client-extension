@@ -13,7 +13,7 @@ export default function ExperimentalSection({ draft, update }: ExperimentalSecti
             <CheckboxRow
                 id="ui-map-shadow-marker"
                 label="Znacznik kolejki kroków na mapie"
-                hint="Różowe obramowanie pomieszczenia, w którym według kolejki jesteś: ostatniego potwierdzonego przez grę (room.info) i kroków, na które gra jeszcze nie odpowiedziała. Gdy rozjeżdża się ze znacznikiem postaci, kolejka i mapa nie zgadzają się co do pozycji. Szczegóły: /mapkolejka."
+                hint="Różowe obramowanie pomieszczenia, w którym według kolejki jesteś: ostatniego potwierdzonego przez grę (room.info) i kroków, na które gra jeszcze nie odpowiedziała. Gdy rozjeżdża się ze znacznikiem postaci, kolejka i mapa nie zgadzają się co do pozycji."
                 checked={draft.mapShadowMarker}
                 onChange={(v) => update({ mapShadowMarker: v })}
             />
