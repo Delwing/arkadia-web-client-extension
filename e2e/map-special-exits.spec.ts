@@ -70,6 +70,30 @@ test.describe('Map special exits', () => {
         await expect.poll(() => getCommandLog(page)).toContain('wejdz na gore');
     });
 
+    test('the compass widget keeps a column for special exits, or hides them by its setting', async ({page}) => {
+        await submitCommand(page, '/widzety');
+        await page.locator('.widget-toolbar').getByRole('button', {name: 'Dodaj'}).click();
+        await page.locator(MENU).getByText('Kompas', {exact: true}).click();
+        await page.keyboard.press('Escape');
+        await expect(page.locator('.widget-toolbar')).toBeHidden();
+
+        const widget = page.locator('.widget-frame[data-widget-type="compass"]');
+        const column = widget.locator('.footer-compass__special');
+        // Reserved before any room, so the rose does not shift when one has special exits.
+        await expect(column).toHaveCount(1);
+        const emptyWidth = (await column.boundingBox())!.width;
+        expect(emptyWidth).toBeGreaterThan(50);
+
+        await enterRynek(page);
+        await expect(column.locator('.footer-compass__exit')).toHaveText(['brama', 'wejdz na gore']);
+        expect((await column.boundingBox())!.width).toBeCloseTo(emptyWidth, 0);
+
+        await widget.click({button: 'right'});
+        await page.locator(MENU).getByText('Ukryj', {exact: true}).click();
+        await expect(column).toHaveCount(0);
+        await expect(widget.locator('[data-dir="e"]')).toBeEnabled();
+    });
+
     test('the exits bar, turned on in the map settings, lists every exit', async ({page}) => {
         await openSettings(page, 'ui-windows');
         const layoutToggle = page.locator('#ui-layout-manager-enabled');

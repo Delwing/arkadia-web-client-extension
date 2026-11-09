@@ -132,8 +132,8 @@ const BUILTIN_WIDGETS: WidgetType[] = [
     defaultCorner: "br",
     options: [
       {
-        key: "custom",
-        label: "Wyjścia z mapy",
+        key: "special",
+        label: "Wyjścia specjalne",
         default: "on",
         choices: [
           { value: "on", label: "Pokaż" },
@@ -141,7 +141,8 @@ const BUILTIN_WIDGETS: WidgetType[] = [
         ],
       },
     ],
-    render: (settings) => <ExitCompass showCustom={settings.custom !== "off"} />,
+    // Shown, they get a column of their own that keeps its width room to room.
+    render: (settings) => <ExitCompass showSpecial={settings.special !== "off"} reserveSpecial />,
   },
   {
     id: "specialExits",
