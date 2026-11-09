@@ -219,7 +219,7 @@ export class StepShadow {
      * The game refused a step: the oldest one waiting is the one it refused.
      *
      * `ambiguous` is for a refusal the game also gives to commands that are not steps
-     * ("Slucham?"): it only counts when nothing else went to the game
+     * ("Nie ma takiej komendy"): it only counts when nothing else went to the game
      * lately, or it could just as well be answering a typo sent before or after the
      * step. Passing on it costs little - the next room.info GMCP can place drops the
      * refused step anyway.

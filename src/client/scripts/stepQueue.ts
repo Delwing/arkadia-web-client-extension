@@ -85,10 +85,4 @@ export default function initStepQueue(client: Client) {
         client.Map.stepShadow.reject('ktos lapie');
         return line;
     }, TAG);
-    // Arkadia's answer to any command it does not know: a special exit the room does not
-    // have, but just as well a typo - so it only counts when nothing else went out lately.
-    client.Triggers.registerTrigger(/^[ >]*Slucham\?$/, (line) => {
-        client.Map.stepShadow.reject('slucham', {ambiguous: true});
-        return line;
-    }, TAG);
 }

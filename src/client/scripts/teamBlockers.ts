@@ -15,7 +15,14 @@ const teamBlockerPatterns: RegExp[] = [
     /nie pozwoli ci zblizyc sie do drzwi\./
 ];
 
-function createBlockerHandler(client: Client) {
+/**
+ * Blockers the game also prints for commands that are not steps - a typo gets
+ * "Nie ma takiej komendy" too - so the shadow queue only takes them as a refused
+ * step when nothing else was sent since.
+ */
+const AMBIGUOUS_BLOCKERS = new Set<string>(["Nie ma takiej komendy. Wpisz"]);
+
+function createBlockerHandler(client: Client, ambiguous = false) {
     return (line: AnsiAwareBuffer) => {
         // The shadow queue hears every blocker, not only the first since the last room.info,
         // and rejects the step itself - the map's step back is not news to it.
@@ -25,13 +32,14 @@ function createBlockerHandler(client: Client) {
                 client.Map.setBlockable(false);
             }
         });
-        client.Map.stepShadow.reject('blokada');
+        client.Map.stepShadow.reject('blokada', {ambiguous});
         return line;
     };
 }
 
 export default function initTeamBlockers(client: Client) {
     const handler = createBlockerHandler(client);
+    const ambiguousHandler = createBlockerHandler(client, true);
 
     // Register team blocker patterns (RegExp)
     teamBlockerPatterns.forEach(pattern => {
@@ -41,6 +49,6 @@ export default function initTeamBlockers(client: Client) {
     // Register blockers from blockers.json
     blockers.forEach(blocker => {
         const blockerPattern = blocker.type === "1" ? new RegExp(blocker.pattern) : blocker.pattern;
-        client.Triggers.registerTrigger(blockerPattern, handler, 'blocker');
+        client.Triggers.registerTrigger(blockerPattern, AMBIGUOUS_BLOCKERS.has(blocker.pattern) ? ambiguousHandler : handler, 'blocker');
     });
 }
