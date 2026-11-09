@@ -13,8 +13,10 @@ import {getMapSettings, onMapSettingsChange} from "@modules/core/settings";
  * - `/mapkolejka wszystko` - every event, including each confirmed step
  * - `/mapkolejka stan` - what is waiting now
  *
- * The map setting `mapShadowMarker` (off by default) also marks the room the queue
- * believes we are in.
+ * Two settings on the "Eksperymentalne" page, both off by default:
+ * - `mapShadowMarker` marks the room the queue believes we are in;
+ * - `mapStepQueueCorrection` moves the map there whenever the game has just answered
+ *   (a step confirmed, a look, a refusal) and the queue and the map disagree.
  */
 
 const ALIAS = '/mapkolejka';
@@ -27,6 +29,13 @@ const GREEN = createColorFormat('#7fff00');
 export const SHADOW_MARKER_COLOR = '#ff3df5';
 
 type Mode = 'off' | 'problems' | 'all';
+
+/**
+ * Events after which the game has just had its say. A disagreement then is the map's
+ * mistake. Not a room.info nothing waited for: a team follow arrives that way, and its
+ * prose moves the map a moment later - correcting first would walk it a room too far.
+ */
+const CORRECTED_AFTER = new Set<ShadowReport['type']>(['confirmed', 'look', 'rejected']);
 
 const LABEL: Record<ShadowReport['type'], string> = {
     queued: 'wyslany',
@@ -98,14 +107,27 @@ export default function initStepShadowReport(client: Client) {
         if (roomId !== undefined) marker.add(roomId);
     };
 
-    const onReport = (report: ShadowReport) => {
-        if (marker.isEnabled()) placeMarker(report.shadowRoom);
-        if (mode === 'all' || (mode === 'problems' && isProblem(report))) client.println(describe(report));
+    let correcting = false;
+
+    /** Put the map where the queue says we are, without the queue taking it as a placement. */
+    const correct = (report: ShadowReport) => {
+        const target = report.shadowRoom;
+        if (!correcting || !CORRECTED_AFTER.has(report.type) || !report.diverged || target === undefined) return;
+        client.Map.stepShadow.inStepWithMap(() => client.Map.setMapRoomById(target));
+        if (mode !== 'off') {
+            client.println(colorString(`[kolejka] poprawiono mape: ${room(report.mapRoom)} -> ${room(target)}`, ORANGE));
+        }
     };
 
-    /** The shadow only builds reports while someone listens: the printout, the marker, or both. */
+    const onReport = (report: ShadowReport) => {
+        if (mode === 'all' || (mode === 'problems' && isProblem(report))) client.println(describe(report));
+        correct(report);
+        if (marker.isEnabled()) placeMarker(report.shadowRoom);
+    };
+
+    /** The shadow only builds reports while someone listens: the printout, the marker, the correction. */
     const syncListener = () => {
-        const wanted = mode !== 'off' || marker.isEnabled();
+        const wanted = mode !== 'off' || marker.isEnabled() || correcting;
         if (wanted) unsubscribe ??= client.Map.stepShadow.onReport(onReport);
         else {
             unsubscribe?.();
@@ -124,8 +146,17 @@ export default function initStepShadowReport(client: Client) {
         }
         syncListener();
     };
-    applyMarkerSetting(getMapSettings().mapShadowMarker);
-    onMapSettingsChange(settings => applyMarkerSetting(settings.mapShadowMarker));
+    const applyCorrectionSetting = (on: boolean) => {
+        if (on === correcting) return;
+        correcting = on;
+        syncListener();
+    };
+    const applySettings = (settings: {mapShadowMarker: boolean; mapStepQueueCorrection: boolean}) => {
+        applyMarkerSetting(settings.mapShadowMarker);
+        applyCorrectionSetting(settings.mapStepQueueCorrection);
+    };
+    applySettings(getMapSettings());
+    onMapSettingsChange(applySettings);
 
     const setMode = (next: Mode) => {
         mode = next;

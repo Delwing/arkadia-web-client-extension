@@ -46,12 +46,6 @@ function MapSections({ draft, update, mapVersion, refreshing, onRefreshMap, expl
                 <CheckboxRow id="ui-instant-move" label="Natychmiastowe przechodzenie po mapie" checked={draft.instantMove} onChange={(v) => update({ instantMove: v })} />
                 <CheckboxRow id="ui-highlight-current-room" label="Podświetl bieżące pomieszczenie" checked={draft.highlightCurrentRoom} onChange={(v) => update({ highlightCurrentRoom: v })} />
                 <CheckboxRow
-                    id="ui-map-shadow-marker"
-                    label="Znacznik kolejki kroków (eksperyment - gdzie wg potwierdzeń gry jesteś)"
-                    checked={draft.mapShadowMarker}
-                    onChange={(v) => update({ mapShadowMarker: v })}
-                />
-                <CheckboxRow
                     id="ui-exploration-mode"
                     label={<>Tryb eksploracji mapy <span id="ui-exploration-stats" className="settings-inline-note">{explorationStats}</span></>}
                     checked={draft.explorationMode}

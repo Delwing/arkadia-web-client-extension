@@ -350,6 +350,7 @@ export class PositionTracker {
         this.renderRoomById(this.locationHistory[this.locationHistory.length - 1], true, {relative: true});
         this.client.sendEvent("stepBack");
         this.sendMapMove();
+        this.shadow.mapSteppedBack();
     }
 
     /** Announce a move, unless the client asked for this one to pass silently. */

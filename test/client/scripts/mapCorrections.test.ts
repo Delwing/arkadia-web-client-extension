@@ -1,12 +1,14 @@
 import initMapCorrections from '@client/scripts/mapCorrections';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import { setMapSettings } from '@modules/core/settings';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   Map = {
     currentRoom: undefined as { id: number; area: number } | undefined,
-    moveBack: jest.fn()
+    moveBack: jest.fn(),
+    stepShadow: { inStepWithMap: (fn: () => void) => fn(), reject: jest.fn() },
   };
   listeners: Record<string, Function[]> = {};
   on = (event: string, listener: Function) => {
@@ -28,6 +30,17 @@ describe('map corrections', () => {
     client = new FakeClient();
     initMapCorrections((client as unknown) as any);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
+  });
+
+  test('leaves the line to the step queue while its correction is on', () => {
+    setMapSettings({ mapStepQueueCorrection: true });
+    try {
+      client.Map.currentRoom = { id: 1000, area: 52 };
+      parse(NO_EXIT);
+      expect(client.Map.moveBack).not.toHaveBeenCalled();
+    } finally {
+      setMapSettings({ mapStepQueueCorrection: false });
+    }
   });
 
   test('steps back in a corrected area', () => {

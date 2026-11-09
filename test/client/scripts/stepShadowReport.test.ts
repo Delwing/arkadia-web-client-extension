@@ -26,8 +26,14 @@ function setup() {
         isEnabled: () => enabled,
     };
     const createHighlighter = vi.fn(() => highlighter);
+    // Placing the map tells the shadow, as PositionTracker.renderRoomById does.
+    const setMapRoomById = vi.fn((id: number) => {
+        if (id === mapRoom) return;
+        mapRoom = id;
+        shadow.placed(id);
+    });
     const client: any = {
-        Map: { stepShadow: shadow, createHighlighter, getRoomById: (id: number) => rooms[id], currentRoom: rooms[1] },
+        Map: { stepShadow: shadow, createHighlighter, setMapRoomById, getRoomById: (id: number) => rooms[id], currentRoom: rooms[1] },
         Triggers: { registerTrigger: vi.fn() },
         aliases: [],
         println: vi.fn(),
@@ -36,6 +42,8 @@ function setup() {
     return {
         shadow,
         createHighlighter,
+        setMapRoomById,
+        mapRoom: () => mapRoom,
         shown: () => (enabled ? [...marked] : []),
         setMap: (id: number) => { mapRoom = id; },
     };
@@ -79,5 +87,52 @@ describe('step shadow marker', () => {
         t.setMap(3);
         t.shadow.step('n', 1);
         expect(t.shown()).toEqual([]);
+    });
+});
+
+describe('step queue correction', () => {
+    beforeEach(() => {
+        localStorage.clear();
+    });
+
+    test('is off by default: the map stays where it walked', () => {
+        const t = setup();
+        t.setMap(2); t.shadow.step('n', 1);
+        t.setMap(3); t.shadow.step('n', 1);
+        t.shadow.roomInfo(2, () => {});
+        t.shadow.reject('blokada');
+        expect(t.setMapRoomById).not.toHaveBeenCalled();
+        expect(t.mapRoom()).toBe(3);
+    });
+
+    test('moves the map to the queue\'s room after a refusal it disagrees with, keeping the queue', () => {
+        const t = setup();
+        setMapSettings({mapStepQueueCorrection: true});
+        t.setMap(2); t.shadow.step('n', 1);
+        t.setMap(3); t.shadow.step('n', 1);
+        t.setMap(3); t.shadow.look();
+        t.shadow.roomInfo(2, () => {});
+        // The second n is blocked; the old flag missed it, so the map still stands on 3.
+        t.shadow.reject('blokada');
+        expect(t.setMapRoomById).toHaveBeenCalledWith(2);
+        expect(t.mapRoom()).toBe(2);
+        // The correction is not a placement: the look still waits for its room.info.
+        expect(t.shadow.pending.map(e => e.kind)).toEqual(['look']);
+        expect(t.shadow.confirmedRoom).toBe(2);
+    });
+
+    test('leaves a room.info nothing waited for to the map, as a team follow moves it next', () => {
+        const t = setup();
+        setMapSettings({mapStepQueueCorrection: true});
+        t.shadow.roomInfo(3, () => {});
+        expect(t.setMapRoomById).not.toHaveBeenCalled();
+    });
+
+    test('does nothing while the queue and the map agree', () => {
+        const t = setup();
+        setMapSettings({mapStepQueueCorrection: true});
+        t.setMap(2); t.shadow.step('n', 1);
+        t.shadow.roomInfo(2, () => {});
+        expect(t.setMapRoomById).not.toHaveBeenCalled();
     });
 });

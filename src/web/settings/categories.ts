@@ -33,6 +33,7 @@ export type SettingsCategoryKey =
     | "ui-map"
     | "ui-sound"
     | "ui-other"
+    | "ui-experimental"
     | "data-sync"
     | "data-backup"
     | "data-devices"
@@ -69,6 +70,7 @@ export const SETTINGS_CATEGORIES: readonly SettingsCategory[] = [
     { key: "ui-map", group: "ui", label: "Mapa" },
     { key: "ui-sound", group: "ui", label: "Dźwięk i powiadomienia", keywords: "dźwięki beep powiadomienia push mowa tts głos czytanie lektor" },
     { key: "ui-other", group: "ui", label: "Inne", keywords: "telefon logi dysk zapis" },
+    { key: "ui-experimental", group: "ui", label: "Eksperymentalne", keywords: "eksperyment kolejka kroków mapa znacznik poprawianie lag blokada" },
     { key: "data-sync", group: "data", label: "Synchronizacja", keywords: "firebase konto logowanie chmura eksport import" },
     { key: "data-backup", group: "data", label: "Kopia zapasowa", keywords: "eksport import plik google drive backup" },
     { key: "data-devices", group: "data", label: "Urządzenia", keywords: "urządzenie grupa synchronizacji" },

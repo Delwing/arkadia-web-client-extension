@@ -3,13 +3,14 @@ import initTeamBlockers from '@client/scripts/teamBlockers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
-  Map: { moveBack: jest.Mock; setBlockable: jest.Mock; isBlockable: boolean };
+  Map: { moveBack: jest.Mock; setBlockable: jest.Mock; isBlockable: boolean; stepShadow: any };
   Triggers: Triggers;
 
   constructor() {
     const self = this;
     this.Map = {
       moveBack: jest.fn(),
+      stepShadow: { inStepWithMap: (fn: () => void) => fn(), reject: jest.fn() },
       setBlockable: jest.fn((value: boolean) => {
         self.Map.isBlockable = value;
       }),

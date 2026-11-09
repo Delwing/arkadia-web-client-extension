@@ -116,10 +116,12 @@ export default function initMoveMode(client: Client) {
             if (client.moveMode !== 1 && client.moveMode !== 2) {
                 return line;
             }
-            if (client.Map.isBlockable) {
-                client.Map.moveBack();
-                client.Map.setBlockable(false);
-            }
+            client.Map.stepShadow.inStepWithMap(() => {
+                if (client.Map.isBlockable) {
+                    client.Map.moveBack();
+                    client.Map.setBlockable(false);
+                }
+            });
             client.Map.stepShadow.reject('ochlon');
             return line;
         },
@@ -132,10 +134,12 @@ export default function initMoveMode(client: Client) {
             if (client.moveMode !== 2) {
                 return line;
             }
-            if (client.Map.isBlockable) {
-                client.Map.moveBack();
-                client.Map.setBlockable(false);
-            }
+            client.Map.stepShadow.inStepWithMap(() => {
+                if (client.Map.isBlockable) {
+                    client.Map.moveBack();
+                    client.Map.setBlockable(false);
+                }
+            });
             client.Map.stepShadow.reject('brak druzyny');
             return line;
         },

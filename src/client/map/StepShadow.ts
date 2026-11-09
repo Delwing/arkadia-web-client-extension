@@ -90,6 +90,8 @@ export class StepShadow {
     private listeners = new Set<(report: ShadowReport) => void>();
     /** Set while a room.info is applied, so the map's own fix is not taken as a placement. */
     private inRoomInfo = false;
+    /** Set while the map is moved on the shadow's behalf, or in step with it: nothing to hear. */
+    private mapMovesAreOurs = false;
     /** When a command that is neither a step nor a look last went to the game. */
     private lastOtherAt: number | undefined;
 
@@ -244,8 +246,34 @@ export class StepShadow {
 
     /** Someone who knows better put the map in `roomId`: /ustaw, the GPS, a labyrinth mapper. */
     placed(roomId: number): void {
-        if (this.inRoomInfo) return;
+        if (this.inRoomInfo || this.mapMovesAreOurs) return;
         this.resetTo(roomId, 'placed');
+    }
+
+    /**
+     * The map stepped back a room because a script decided the last step failed (a
+     * fall, a trap, /cofnij). The shadow takes the map's word for it and starts over
+     * from there - unless the step back is one it already accounts for, see
+     * {@link inStepWithMap}.
+     */
+    mapSteppedBack(): void {
+        if (this.inRoomInfo || this.mapMovesAreOurs) return;
+        this.resetTo(this.deps.mapRoomId(), 'cofniecie');
+    }
+
+    /**
+     * Run `fn`, which moves the map in a way the shadow already knows about - a
+     * blocker's step back it rejects itself, or a correction it asked for - so the
+     * move is not taken as someone else's placement.
+     */
+    inStepWithMap(fn: () => void): void {
+        const previous = this.mapMovesAreOurs;
+        this.mapMovesAreOurs = true;
+        try {
+            fn();
+        } finally {
+            this.mapMovesAreOurs = previous;
+        }
     }
 
     private resetTo(roomId: number | undefined, reason: string): void {

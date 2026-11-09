@@ -29,6 +29,7 @@ export type SettingsCategory =
     | 'ui-map'
     | 'ui-sound'
     | 'ui-other'
+    | 'ui-experimental'
     | 'data-sync'
     | 'data-backup'
     | 'data-devices';

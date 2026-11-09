@@ -232,6 +232,27 @@ describe('StepShadow', () => {
         expect(t.reports.at(-1)).toMatchObject({type: 'rejected'});
     });
 
+    test('a step back by a script starts over from the map, one the shadow knows about does not', () => {
+        const t = setup();
+        t.shadow.step('n', 1);
+        t.shadow.step('n', 1);
+        t.setMap(1);
+        t.shadow.inStepWithMap(() => t.shadow.mapSteppedBack());
+        expect(t.shadow.pending).toHaveLength(2);
+
+        t.shadow.mapSteppedBack();
+        expect(t.shadow.pending).toHaveLength(0);
+        expect(t.shadow.confirmedRoom).toBe(1);
+        expect(t.reports.at(-1)).toMatchObject({type: 'reset', source: 'cofniecie'});
+    });
+
+    test('a placement made in step with the shadow is not a reset', () => {
+        const t = setup();
+        t.shadow.step('n', 1);
+        t.shadow.inStepWithMap(() => t.shadow.placed(5));
+        expect(t.shadow.pending).toHaveLength(1);
+    });
+
     test('a refusal with nothing waiting is reported as such', () => {
         const t = setup();
         t.shadow.reject('brak wyjscia');

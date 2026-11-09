@@ -14,7 +14,9 @@ Komendy do poruszania się, mapy i automatycznego chodzenia.
 | `/mapkolejka wszystko` | Jak wyżej, ale każde zdarzenie, także każdy potwierdzony krok |
 | `/mapkolejka stan` | Co kolejka teraz uważa: ostatnie potwierdzone pomieszczenie, czekające kroki i gdzie z nich wychodzi |
 
-> **Znacznik kolejki:** w ustawieniach mapy opcja *Znacznik kolejki kroków* (domyślnie wyłączona) zaznacza na mapie różowym obramowaniem pomieszczenie, w którym według kolejki jesteś. Gdy rozjeżdża się ze znacznikiem postaci, kolejka i mapa nie zgadzają się co do pozycji.
+> **Ustawienia → Eksperymentalne** (obie opcje domyślnie wyłączone):
+> - *Znacznik kolejki kroków na mapie* zaznacza różowym obramowaniem pomieszczenie, w którym według kolejki jesteś. Gdy rozjeżdża się ze znacznikiem postaci, kolejka i mapa nie zgadzają się co do pozycji.
+> - *Poprawiaj mapę według kolejki kroków* przenosi mapę tam, gdzie wskazuje kolejka, gdy gra właśnie potwierdziła krok, odpowiedziała na rozejrzenie się albo odmówiła przejścia, a mapa stoi gdzie indziej. Przydaje się przy lagach, gdy wpiszesz kilka kroków naraz, a któryś zablokuje przeszkoda. Gdy `/mapkolejka` jest włączona, każda poprawka jest wypisywana.
 | `/idz kierunek` | Wybierz przeciwne wyjście w pomieszczeniu |
 | `n!` `s!` `e!` `w!` `ne!` `nw!` `se!` `sw!` `u!` `d!` | Wyślij czysty kierunek do serwera z pominięciem ruchu po mapie |
 

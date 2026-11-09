@@ -9,6 +9,7 @@ import {
     waitForMapReady,
     waitForOutputContaining,
 } from './support/mocks';
+import { openSettings, saveSettings } from './support/settings';
 
 const POSLAN = 'Miasteczko Poslan';
 
@@ -97,5 +98,33 @@ test.describe('Map step shadow (/mapkolejka)', () => {
 
         await submitCommand(page, '/mapkolejka stan');
         await waitForOutputContaining(page, 'czeka: e, wychodzi #2 Rynek');
+    });
+
+    test('with correction on, the map jumps back to where the queue says after a missed blocker', async ({ page }) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await waitForMapReady(page);
+
+        const settings = await openSettings(page, 'ui-experimental');
+        await settings.locator('#ui-map-step-queue-correction').check();
+        await saveSettings(page);
+
+        await pushGmcp(page, GMCP_PATHS.ROOM_INFO, roomInfo(1, 0, 0));
+        await expect(page.locator('#location-text')).toContainText('#1');
+
+        // The map walks e, e, n at once: Poczta (1) -> Rynek (2) -> Kamienny Most (3) -> Rezydencja (4).
+        await submitCommand(page, 'e;e;n');
+        await expect(page.locator('#location-text')).toContainText('#4');
+
+        // The game takes the first e and blocks the second; the map's own check already let go.
+        await pushGmcp(page, GMCP_PATHS.ROOM_INFO, roomInfo(2, 1, 0));
+        await pushText(page, 'Ogromne stwory przysiadaja przed brama, blokujac do niej dostepu.');
+        await expect(page.locator('#location-text'), 'the queue puts the map back on Rynek').toContainText('#2');
+
+        // The n is still on its way: Rynek has no way north, so the game refuses it and the map stays.
+        await pushText(page, 'Nie widzisz zadnego wyjscia prowadzacego na polnoc.');
+        await submitCommand(page, '/mapkolejka stan');
+        await waitForOutputContaining(page, 'Kolejka: potwierdzone #2 Rynek, czeka: nic, wychodzi #2 Rynek, mapa #2');
     });
 });

@@ -140,6 +140,8 @@ export interface MapSettings {
     highlightCurrentRoom: boolean;
     /** Experiment: mark the room the shadow step queue (StepShadow) believes we are in. */
     mapShadowMarker: boolean;
+    /** Experiment: move the map to the shadow step queue's room whenever the game's answers say they disagree. */
+    mapStepQueueCorrection: boolean;
     labelRenderMode: 'image' | 'data' | 'none';
     transparentLabels: boolean;
     emojiLabels: boolean;

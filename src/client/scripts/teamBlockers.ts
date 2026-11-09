@@ -24,11 +24,14 @@ const AMBIGUOUS_BLOCKERS = new Set<string>(["Nie ma takiej komendy. Wpisz"]);
 
 function createBlockerHandler(client: Client, ambiguous = false) {
     return (line: AnsiAwareBuffer) => {
-        if (client.Map.isBlockable) {
-            client.Map.moveBack();
-            client.Map.setBlockable(false);
-        }
-        // The shadow queue hears every blocker, not only the first since the last room.info.
+        // The shadow queue hears every blocker, not only the first since the last room.info,
+        // and rejects the step itself - the map's step back is not news to it.
+        client.Map.stepShadow.inStepWithMap(() => {
+            if (client.Map.isBlockable) {
+                client.Map.moveBack();
+                client.Map.setBlockable(false);
+            }
+        });
         client.Map.stepShadow.reject('blokada', {ambiguous});
         return line;
     };

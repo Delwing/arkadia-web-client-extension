@@ -1,4 +1,5 @@
 import Client from "../Client";
+import {getMapSettings} from "@modules/core/settings";
 
 /**
  * Map Corrections Module
@@ -58,6 +59,9 @@ export default function initMapCorrections(client: Client) {
     client.Triggers.registerTrigger(
         /^[ >]*Nie widzisz zadnego wyjscia prowadzacego na (.+)\.$/,
         (line, matches) => {
+            // The step queue's correction answers this line everywhere; stepping back here too
+            // would take the map one room further than it should.
+            if (getMapSettings().mapStepQueueCorrection) return line;
             const room = client.Map.currentRoom;
             if (!room) return line;
 
@@ -87,7 +91,8 @@ export default function initMapCorrections(client: Client) {
                 return line;
             }
 
-            client.Map.moveBack();
+            // The shadow queue hears this line everywhere and rejects the step itself.
+            client.Map.stepShadow.inStepWithMap(() => client.Map.moveBack());
             return line;
         },
         "map-corrections",
