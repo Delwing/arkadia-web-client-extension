@@ -7,6 +7,7 @@ import type { WindowSettingField } from './windowSettings';
 export const MAP_SETTINGS_FIELDS: WindowSettingField[] = [
   // Checked = the area label moves into the header, i.e. the map overlay hides it.
   { type: 'toggle', key: 'labelVisible', label: 'Etykieta w nagłówku', default: true, inverted: true },
+  { type: 'toggle', key: 'showExitsBar', label: 'Pasek wyjść', default: false },
   { type: 'toggle', key: 'alwaysShowNote', label: 'Notatka zawsze widoczna', default: false },
   { type: 'toggle', key: 'showGrid', label: 'Siatka', default: false },
   { type: 'toggle', key: 'showAreaExitLabels', label: 'Etykiety wyjść obszaru', default: true },

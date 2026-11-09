@@ -754,6 +754,12 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
   white-space: nowrap;
   cursor: pointer;
 }
+/* A special exit only the map knows of: the game does not list it. */
+.footer-compass__exit.is-custom {
+  border-style: dashed;
+  color: var(--popup-text-dim);
+  font-style: italic;
+}
 
 /* Touch: pills are buttons to hit, not hints to read. */
 @media (pointer: coarse) {

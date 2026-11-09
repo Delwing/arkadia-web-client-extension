@@ -3,6 +3,7 @@ import eventBus from "@modules/core/eventBus";
 import { registerWidgetType, type WidgetType } from "@modules/core/widgetRegistry.ts";
 import { WorldTimeClocks, type WorldTimeView } from "@web/WorldTimeView.tsx";
 import ExitCompass from "../footer/ExitCompass";
+import { useRoomExits, walkExit } from "../map/roomExits";
 import Vitals from "../footer/Vitals";
 
 interface TransportTimer {
@@ -52,6 +53,22 @@ function TransportWidget() {
           <span className="widget-transport__fill" style={{ width: `${Math.round(done * 100)}%` }} />
         </div>
       )}
+    </div>
+  );
+}
+
+/** The room's special exits from the map, as buttons; nothing when there are none. */
+function SpecialExitsWidget({ all }: { all: boolean }) {
+  const exits = useRoomExits();
+  const list = all ? exits.mapSpecial : exits.custom;
+  if (list.length === 0) return null;
+  return (
+    <div className="widget-exits">
+      {list.map((exit) => (
+        <button key={exit} type="button" className="widget-exits__exit" title={exit} onClick={() => walkExit(exit)}>
+          {exit}
+        </button>
+      ))}
     </div>
   );
 }
@@ -113,7 +130,35 @@ const BUILTIN_WIDGETS: WidgetType[] = [
     id: "compass",
     label: "Kompas",
     defaultCorner: "br",
-    render: () => <ExitCompass />,
+    options: [
+      {
+        key: "custom",
+        label: "Wyjścia z mapy",
+        default: "on",
+        choices: [
+          { value: "on", label: "Pokaż" },
+          { value: "off", label: "Ukryj" },
+        ],
+      },
+    ],
+    render: (settings) => <ExitCompass showCustom={settings.custom !== "off"} />,
+  },
+  {
+    id: "specialExits",
+    label: "Wyjścia specjalne",
+    defaultCorner: "br",
+    options: [
+      {
+        key: "show",
+        label: "Pokaż",
+        default: "hidden",
+        choices: [
+          { value: "hidden", label: "Niewidoczne w grze" },
+          { value: "all", label: "Wszystkie z mapy" },
+        ],
+      },
+    ],
+    render: (settings) => <SpecialExitsWidget all={settings.show === "all"} />,
   },
   {
     id: "transport",

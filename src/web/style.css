@@ -1463,6 +1463,58 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   color: #ff8800;
 }
 
+/* The exits bar (map setting "Pasek wyjść"): one line along the top of the
+   map, under the location label when that shows, cut off with an ellipsis. */
+#map-exits-wrapper {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  right: 0.5rem;
+  z-index: 1010;
+  pointer-events: none;
+  display: flex;
+}
+#map-exits-wrapper.is-below-label {
+  top: 2.1rem;
+}
+.map-exits-bar {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  font-family: monospace;
+  font-size: 0.7rem;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 7px;
+  opacity: 0.75;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: auto;
+}
+.map-exits-bar:hover {
+  opacity: 1;
+}
+.map-exits-bar__sep {
+  margin: 0 0.3rem;
+  opacity: 0.5;
+}
+.map-exits-bar__exit {
+  cursor: pointer;
+}
+.map-exits-bar__exit:hover {
+  text-decoration: underline;
+}
+.map-exits-bar__exit--special {
+  color: #ffd27f;
+}
+/* Only the map knows of it: the game does not list it. */
+.map-exits-bar__exit--custom {
+  color: #8fd3ff;
+  font-style: italic;
+}
+
 /* Top-right corner of the map, opposite the location label. Travels with the
    map into the layout manager's panel, the same way the label does. */
 #map-lost-wrapper {

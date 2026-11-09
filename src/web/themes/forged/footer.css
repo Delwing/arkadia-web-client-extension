@@ -416,6 +416,7 @@ body.theme-forged #input-area .command-menu__item--danger:hover:not(:disabled) {
   appearance: none; -webkit-appearance: none;
 }
 .theme-forged #footer-layout .footer-compass__exit:hover { border-color: var(--bronze-dim); }
+.theme-forged #footer-layout .footer-compass__exit.is-custom { border-style: dashed; font-style: italic; opacity: 0.85; }
 
 .theme-forged #footer-layout .chip {
   display: inline-flex;

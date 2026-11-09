@@ -1,11 +1,5 @@
-import { useState } from "react";
-import eventBus from "@modules/core/eventBus";
-import { gmcp } from "@client/gmcp";
-import { getShortDir, longToShort } from "@shared/map/directions";
-import { useClientEvent } from "../hooks";
+import { combineExits, useRoomExits, walkExit, type RoomExits } from "../map/roomExits";
 import { PREVIEW_EXITS, useFooterPreview } from "./layout/previewContext";
-
-const SHORT_DIRS = new Set(Object.values(longToShort));
 
 /** The rose, row by row, up and down in a fourth column; `null` is a gap. */
 const ROSE: ([string, string] | null)[] = [
@@ -14,36 +8,20 @@ const ROSE: ([string, string] | null)[] = [
   ["sw", "↙"], ["s", "↓"], ["se", "↘"], ["d", "▼"],
 ];
 
-interface Exits {
-  standard: Set<string>;
-  special: string[];
-}
-
-function readExits(info: { exits?: unknown } | undefined): Exits {
-  const list = Array.isArray(info?.exits) ? (info.exits as unknown[]).filter((e): e is string => typeof e === "string") : [];
-  const standard = new Set<string>();
-  const special: string[] = [];
-  for (const exit of list) {
-    const short = getShortDir(exit);
-    if (SHORT_DIRS.has(short)) standard.add(short);
-    else special.push(exit);
-  }
-  return { standard, special };
-}
-
-const go = (command: string) => eventBus.emit("sendCommand", { command });
+const PREVIEW: RoomExits = combineExits(PREVIEW_EXITS, { specialExits: { "wejdz na gore": 0 } });
 
 /**
  * The current room's exits (GMCP Room.Info) as a compass rose: a direction
  * that leads somewhere lights up and walks there on a click; special exits
- * ("wyjscie", "brama") line up beside it as buttons of their own.
+ * ("wyjscie", "brama") line up beside it as buttons of their own, followed by
+ * the map's special exits the game does not show ("wejdz na gore"), marked as such.
  */
-export default function ExitCompass() {
-  const [liveExits, setExits] = useState(() => readExits(gmcp?.room?.info));
-  useClientEvent<{ exits?: unknown }>("gmcp.room.info", (info) => setExits(readExits(info)));
+export default function ExitCompass({ showCustom = true }: { showCustom?: boolean }) {
+  const liveExits = useRoomExits();
   // The layout editor's preview shows a rose with some exits even before a room.
   const preview = useFooterPreview();
-  const exits = preview && liveExits.standard.size === 0 && liveExits.special.length === 0 ? readExits(PREVIEW_EXITS) : liveExits;
+  const exits = preview && liveExits.standard.size === 0 && liveExits.special.length === 0 ? PREVIEW : liveExits;
+  const custom = showCustom ? exits.custom : [];
 
   return (
     <div className="footer-compass">
@@ -60,17 +38,28 @@ export default function ExitCompass() {
               data-dir={dir}
               disabled={!open}
               title={dir}
-              onClick={() => go(dir)}
+              onClick={() => walkExit(dir)}
             >
               {glyph}
             </button>
           );
         })}
       </div>
-      {exits.special.length > 0 && (
+      {(exits.special.length > 0 || custom.length > 0) && (
         <div className="footer-compass__special">
           {exits.special.map((exit) => (
-            <button key={exit} type="button" className="footer-compass__exit" title={exit} onClick={() => go(exit)}>
+            <button key={exit} type="button" className="footer-compass__exit" title={exit} onClick={() => walkExit(exit)}>
+              {exit}
+            </button>
+          ))}
+          {custom.map((exit) => (
+            <button
+              key={`map:${exit}`}
+              type="button"
+              className="footer-compass__exit is-custom"
+              title={`${exit} (wyjście z mapy)`}
+              onClick={() => walkExit(exit)}
+            >
               {exit}
             </button>
           ))}

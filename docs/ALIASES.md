@@ -79,7 +79,7 @@ Zakresy działają rosnąco (`1-7`) i malejąco (`7-1`). Maksymalnie 50 iteracji
 
 | Komenda | Opis |
 |---------|------|
-| `/widzety` | Włącz lub wyłącz układanie widżetów (to samo co Menu → Widżety): widżety dostają obramowanie i można je przeciągać, a pasek u góry dodaje nowe (Zegar, Witalne, Kompas, Transport i widżety pluginów). Esc albo „Gotowe” kończy. Prawy klik na widżecie: jego ustawienia, rozmiar, krycie i Usuń. Widżet trzyma się najbliższego rogu okna gry, więc zostaje na miejscu po zmianie rozmiaru okna lub doków |
+| `/widzety` | Włącz lub wyłącz układanie widżetów (to samo co Menu → Widżety): widżety dostają obramowanie i można je przeciągać, a pasek u góry dodaje nowe (Zegar, Witalne, Kompas, Wyjścia specjalne, Transport i widżety pluginów). Esc albo „Gotowe” kończy. Prawy klik na widżecie: jego ustawienia, rozmiar, krycie i Usuń. Widżet trzyma się najbliższego rogu okna gry, więc zostaje na miejscu po zmianie rozmiaru okna lub doków |
 
 ## Język
 
