@@ -213,7 +213,7 @@ describe('StepShadow', () => {
         t.shadow.reject('blokada', {ambiguous: true});
         expect(t.reports.at(-1)).toMatchObject({type: 'rejected'});
 
-        // A typo after the step: "Nie ma takiej komendy" may be answering it.
+        // A typo after the step: "Slucham?" may be answering it.
         t.shadow.step('n', 1);
         t.shadow.other();
         t.shadow.reject('blokada', {ambiguous: true});

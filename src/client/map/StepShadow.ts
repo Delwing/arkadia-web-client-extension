@@ -1,7 +1,7 @@
 import {stepTarget} from "./exitResolution";
 
-/** A bare look around, which the game answers with a room.info like a step. */
-export const LOOK_COMMAND = /^(?:l|sp|spojrz|zerknij)$/;
+/** A bare look around, which the game answers with a room.info like a step. Arkadia has no `l`. */
+export const LOOK_COMMAND = /^(?:sp|spojrz|zerknij)$/;
 
 /**
  * Something sent to the game that will be answered by one `gmcp.room.info`: a step
@@ -219,7 +219,7 @@ export class StepShadow {
      * The game refused a step: the oldest one waiting is the one it refused.
      *
      * `ambiguous` is for a refusal the game also gives to commands that are not steps
-     * ("Nie ma takiej komendy"): it only counts when nothing else went to the game
+     * ("Slucham?"): it only counts when nothing else went to the game
      * lately, or it could just as well be answering a typo sent before or after the
      * step. Passing on it costs little - the next room.info GMCP can place drops the
      * refused step anyway.

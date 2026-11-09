@@ -70,14 +70,24 @@ test.describe('Map step queue correction (Eksperymentalne)', () => {
         await expect(page.locator('#location-text')).toContainText('#6');
     });
 
-    test('a typo answered with "Nie ma takiej komendy" does not undo a waiting step', async ({ page }) => {
+    test('a special exit answered with "Slucham?" puts the map back', async ({ page }) => {
+        await startWithCorrection(page, { id: 1, x: 0, y: 0 });
+
+        await submitCommand(page, 'e');
+        await expect(page.locator('#location-text')).toContainText('#2');
+        // Nothing else went out since the step, so the game's "what?" is its refusal.
+        await pushText(page, 'Slucham?');
+        await expect(page.locator('#location-text')).toContainText('#1');
+    });
+
+    test('a typo answered with "Slucham?" does not undo a waiting step', async ({ page }) => {
         await startWithCorrection(page, { id: 1, x: 0, y: 0 });
 
         await submitCommand(page, 'e');
         await expect(page.locator('#location-text')).toContainText('#2');
         await submitCommand(page, 'pomachaj');
         // Taken as the step's refusal, this would send the map back to Poczta (1).
-        await pushText(page, "Nie ma takiej komendy. Wpisz '?' aby uzyskac pomoc.");
+        await pushText(page, 'Slucham?');
         await pushGmcp(page, GMCP_PATHS.ROOM_INFO, roomInfo(2, 1, 0));
         await expect(page.locator('#location-text')).toContainText('#2');
     });

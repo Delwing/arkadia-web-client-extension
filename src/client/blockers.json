@@ -716,10 +716,6 @@
     "type": "2"
   },
   {
-    "pattern": "Nie ma takiej komendy. Wpisz",
-    "type": "2"
-  },
-  {
     "pattern": "^[ >]*(Njalla|Czerwononosa rudowlosa krasnoludka) .* do ciebie: Jeno Smoki moga tam wchodzic, winc si nie pchaj, kaj cie nie zapraszaja\\.$",
     "type": "1"
   },
