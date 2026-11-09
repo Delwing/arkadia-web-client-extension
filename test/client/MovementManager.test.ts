@@ -58,7 +58,7 @@ vi.mock('@client/map/MapHelper.ts', () => {
         resolveDirection: resolveFn,
         followMove: jest.fn(),
         setBlockable: jest.fn(),
-        stepShadow: { step: jest.fn(), look: jest.fn() },
+        stepShadow: { step: jest.fn(), look: jest.fn(), other: jest.fn() },
       };
     }),
   };
@@ -108,6 +108,7 @@ describe('MovementManager', () => {
     expect(client.Map.stepShadow.look).toHaveBeenCalledTimes(1);
     await client.sendCommand('spojrz na miecz');
     expect(client.Map.stepShadow.look).toHaveBeenCalledTimes(1);
+    expect(client.Map.stepShadow.other).toHaveBeenCalledTimes(1);
   });
 
   test('moveMode 1 prefixes direction with przemknij', async () => {

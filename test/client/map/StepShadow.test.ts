@@ -207,6 +207,31 @@ describe('StepShadow', () => {
         expect(t.shadow.confirmedRoom).toBe(4);
     });
 
+    test('a refusal the game also gives to typos counts only when nothing else was sent lately', () => {
+        const t = setup();
+        t.shadow.step('n', 1);
+        t.shadow.reject('blokada', {ambiguous: true});
+        expect(t.reports.at(-1)).toMatchObject({type: 'rejected'});
+
+        // A typo after the step: "Nie ma takiej komendy" may be answering it.
+        t.shadow.step('n', 1);
+        t.shadow.other();
+        t.shadow.reject('blokada', {ambiguous: true});
+        expect(t.reports.at(-1)).toMatchObject({type: 'unmatched-reject', source: 'blokada, niejednoznaczne'});
+        expect(t.shadow.pending).toHaveLength(1);
+
+        // A typo before the step is just as ambiguous: its answer arrives while the step waits.
+        t.advance(SHADOW_STALE_MS + 1);
+        t.shadow.other();
+        t.shadow.step('n', 1);
+        t.shadow.reject('blokada', {ambiguous: true});
+        expect(t.reports.at(-1)?.type).toBe('unmatched-reject');
+
+        // Movement-only blockers are never ambiguous.
+        t.shadow.reject('blokada');
+        expect(t.reports.at(-1)).toMatchObject({type: 'rejected'});
+    });
+
     test('a refusal with nothing waiting is reported as such', () => {
         const t = setup();
         t.shadow.reject('brak wyjscia');

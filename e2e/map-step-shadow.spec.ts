@@ -77,4 +77,25 @@ test.describe('Map step shadow (/mapkolejka)', () => {
         await submitCommand(page, '/mapkolejka stan');
         await waitForOutputContaining(page, 'Kolejka: potwierdzone #6 Wejscie do Jaskin, czeka: nic');
     });
+
+    test('a typo answered with "Nie ma takiej komendy" does not cancel a waiting step', async ({ page }) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await waitForMapReady(page);
+
+        await pushGmcp(page, GMCP_PATHS.ROOM_INFO, roomInfo(1, 0, 0));
+        await expect(page.locator('#location-text')).toContainText('#1');
+
+        await submitCommand(page, '/mapkolejka');
+        await waitForOutputContaining(page, 'Kolejka krokow mapy: wlaczona (tylko problemy).');
+
+        await submitCommand(page, 'e');
+        await submitCommand(page, 'pomachaj');
+        await pushText(page, "Nie ma takiej komendy. Wpisz '?' aby uzyskac pomoc.");
+        await waitForOutputContaining(page, 'odmowa bez kroku [blokada, niejednoznaczne]');
+
+        await submitCommand(page, '/mapkolejka stan');
+        await waitForOutputContaining(page, 'czeka: e, wychodzi #2 Rynek');
+    });
 });

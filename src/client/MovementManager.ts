@@ -82,6 +82,8 @@ export default class MovementManager {
             this.client.Map.stepShadow.step(moveRes.direction, fromRoomId);
         } else if (!movePrefix && LOOK_COMMAND.test(command.trim().toLowerCase())) {
             this.client.Map.stepShadow.look();
+        } else {
+            this.client.Map.stepShadow.other();
         }
 
         if (isOriginalDirection || moveRes.moved) {

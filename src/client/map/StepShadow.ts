@@ -90,6 +90,8 @@ export class StepShadow {
     private listeners = new Set<(report: ShadowReport) => void>();
     /** Set while a room.info is applied, so the map's own fix is not taken as a placement. */
     private inRoomInfo = false;
+    /** When a command that is neither a step nor a look last went to the game. */
+    private lastOtherAt: number | undefined;
 
     constructor(private readonly deps: StepShadowDeps) {}
 
@@ -206,9 +208,26 @@ export class StepShadow {
         return from ? stepTarget(this.deps.resolve, from, entry.direction, false) : undefined;
     }
 
-    /** The game refused a step: the oldest one waiting is the one it refused. */
-    reject(source: string): void {
+    /** A command that is neither a step nor a look went to the game. */
+    other(): void {
+        this.lastOtherAt = this.now();
+    }
+
+    /**
+     * The game refused a step: the oldest one waiting is the one it refused.
+     *
+     * `ambiguous` is for a refusal the game also gives to commands that are not steps
+     * ("Nie ma takiej komendy"): it only counts when nothing else went to the game
+     * lately, or it could just as well be answering a typo sent before or after the
+     * step. Passing on it costs little - the next room.info GMCP can place drops the
+     * refused step anyway.
+     */
+    reject(source: string, options: { ambiguous?: boolean } = {}): void {
         this.dropStale();
+        if (options.ambiguous && this.lastOtherAt !== undefined && this.now() - this.lastOtherAt <= SHADOW_STALE_MS) {
+            this.report('unmatched-reject', {source: `${source}, niejednoznaczne`});
+            return;
+        }
         const index = this.queue.findIndex(entry => entry.kind === 'step');
         if (index === -1) {
             this.report('unmatched-reject', {source});
