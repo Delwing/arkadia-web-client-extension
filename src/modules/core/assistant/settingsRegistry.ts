@@ -180,7 +180,8 @@ const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
     footerLayout: { type: 'enum', enumValues: ['stock', 'forge', 'arkadia', 'custom'], label: 'Układ stopki', optional: true },
     footerLayoutTweaks: { type: 'complex', optional: true },
     footerCustomLayout: { type: 'complex', optional: true },
-    footerCustomBase: { type: 'enum', enumValues: ['stock', 'forge', 'arkadia'], optional: true },
+    // Set by the layout editor with footerCustomLayout; only "Przywróć" reads it.
+    footerCustomBase: { type: 'complex', optional: true },
     footerComponents: { type: 'complex' },
     footerUrgentChipsFirst: { type: 'boolean', label: 'Pilne plakietki na początku stopki' },
     footerBindsScale: { type: 'number', min: 0.8, max: 2, label: 'Skala paska bindów' },
