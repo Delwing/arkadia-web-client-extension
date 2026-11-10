@@ -3,9 +3,21 @@ import {createHighlighterCore} from 'shiki/core'
 import {createOnigurumaEngine} from 'shiki/engine/oniguruma'
 import {shikiToMonaco} from '@shikijs/monaco'
 import pluginApiTypes from '../types/index.d.ts?raw'
+import pluginUiTypes from '../types/ui.d.ts?raw'
 import type {StatusType} from './types'
 import { registerSnippets } from './snippets'
 import {IPosition, IRange} from "monaco-editor";
+
+/**
+ * The module plugins import the API types from, as in an IDE with the npm
+ * package (`import type { PluginApi } from '@arkadia/plugin-types'`), so a
+ * plugin reads the same in both. Auto-imports use it.
+ */
+export const PLUGIN_TYPES_MODULE = '@arkadia/plugin-types'
+/** The name the editor offered before; it still resolves, and its imports are merged into. */
+const LEGACY_PLUGIN_TYPES_MODULE = 'plugin-api'
+/** Where the editor's own typings are registered; plugin files live elsewhere. */
+const TYPINGS_ROOT = 'file:///node_modules/'
 
 /**
  * The themes the editor offers, imported one by one. The full `shiki` bundle
@@ -161,6 +173,15 @@ export function setupTypeScriptEnvironment() {
     pluginApiTypes,
     'file:///node_modules/@types/plugin-api/index.d.ts'
   )
+
+  // The same API under the npm package's name, and its `/ui` typings
+  // (`declare module '@arkadia/ui'`). The package re-exports the module above
+  // rather than a second copy, so go-to-definition still lands in one place.
+  const packageEntry = `export * from '${LEGACY_PLUGIN_TYPES_MODULE}';\nexport { default } from '${LEGACY_PLUGIN_TYPES_MODULE}';\n`
+  for (const defaults of [monaco.typescript.typescriptDefaults, monaco.typescript.javascriptDefaults]) {
+    defaults.addExtraLib(packageEntry, `${TYPINGS_ROOT}${PLUGIN_TYPES_MODULE}/index.d.ts`)
+    defaults.addExtraLib(pluginUiTypes, `${TYPINGS_ROOT}${PLUGIN_TYPES_MODULE}/ui.d.ts`)
+  }
 
   // Add wildcard module declarations for JSON files
   const jsonModuleDeclaration = `declare module "*.json" {
@@ -660,6 +681,12 @@ function extractImportedSymbols(content: string): Set<string> {
   return imported
 }
 
+/** An import of the plugin types, under either name, to merge a new one into. */
+function findPluginTypesImport(content: string): ReturnType<typeof findExistingImport> {
+  const current = findExistingImport(content, PLUGIN_TYPES_MODULE)
+  return current.exists ? current : findExistingImport(content, LEGACY_PLUGIN_TYPES_MODULE)
+}
+
 // Find existing import statement for a given path and determine how to add new import
 function findExistingImport(content: string, importPath: string): {
   exists: boolean
@@ -671,6 +698,8 @@ function findExistingImport(content: string, importPath: string): {
   hasNamed?: boolean
   namedImports?: string[]
   isTypeImport?: boolean
+  /** The module the import names. */
+  path?: string
 } {
   const lines = content.split('\n')
 
@@ -704,7 +733,8 @@ function findExistingImport(content: string, importPath: string): {
           defaultImportName: defaultImport,
           hasNamed: namedImports.length > 0,
           namedImports,
-          isTypeImport: line.includes('import type')
+          isTypeImport: line.includes('import type'),
+          path: matchedPath,
         }
       }
     }
@@ -865,7 +895,7 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
           return
         }
 
-        const importStatement = `import type { ${exp.name} } from "plugin-api"`
+        const importStatement = `import type { ${exp.name} } from "${PLUGIN_TYPES_MODULE}"`
         const insertText = exp.name
 
         let kind = monaco.languages.CompletionItemKind.Variable
@@ -900,12 +930,12 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
               suggestions.push({
                 label: {
                   label: exp.name,
-                  description: 'plugin-api',
+                  description: PLUGIN_TYPES_MODULE,
                 },
                 kind: kind,
                 insertText: inlineInsertText,
                 range: range,
-                detail: `(${exp.kind}) from plugin-api`,
+                detail: `(${exp.kind}) from ${PLUGIN_TYPES_MODULE}`,
                 documentation: exp.documentation ? { value: exp.documentation } : undefined,
                 sortText: '0' + exp.name,
                 additionalTextEdits: [{
@@ -915,30 +945,30 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
                     endLineNumber: position.lineNumber,
                     endColumn: position.column + insertText.length + (needsSpaceAfterBrace ? 1 : 0) + 2,
                   },
-                  text: ` from "plugin-api"`,
+                  text: ` from "${PLUGIN_TYPES_MODULE}"`,
                 }],
               })
               return
             } else {
-              inlineInsertText = `${insertText} from "plugin-api"`
+              inlineInsertText = `${insertText} from "${PLUGIN_TYPES_MODULE}"`
             }
           }
 
           suggestions.push({
             label: {
               label: exp.name,
-              description: 'plugin-api',
+              description: PLUGIN_TYPES_MODULE,
             },
             kind: kind,
             insertText: inlineInsertText,
             range: range,
-            detail: `(${exp.kind}) from plugin-api`,
+            detail: `(${exp.kind}) from ${PLUGIN_TYPES_MODULE}`,
             documentation: exp.documentation ? { value: exp.documentation } : undefined,
             sortText: '0' + exp.name,
           })
         } else {
-          // Check if there's already an import from plugin-api
-          const existingImport = findExistingImport(currentContent, 'plugin-api')
+          // Check if there's already an import of the plugin types
+          const existingImport = findPluginTypesImport(currentContent)
 
           let additionalEdits: any[] = []
 
@@ -955,10 +985,10 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
             let newImportLine: string
             if (existingImport.hasDefault && existingImport.defaultImportName) {
               // Has default import - use regular import (not import type) to preserve default
-              newImportLine = `import ${existingImport.defaultImportName}, { ${allNamed} } from "plugin-api"`
+              newImportLine = `import ${existingImport.defaultImportName}, { ${allNamed} } from "${existingImport.path}"`
             } else {
-              // No default import - use import type for plugin-api
-              newImportLine = `import type { ${allNamed} } from "plugin-api"`
+              // No default import - a type-only import
+              newImportLine = `import type { ${allNamed} } from "${existingImport.path}"`
             }
 
             additionalEdits = [{
@@ -985,20 +1015,20 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
           suggestions.push({
             label: {
               label: exp.name,
-              description: 'plugin-api',
+              description: PLUGIN_TYPES_MODULE,
             },
             kind: kind,
             insertText: insertText,
             range: range,
-            detail: `(${exp.kind}) Auto import from plugin-api`,
+            detail: `(${exp.kind}) Auto import from ${PLUGIN_TYPES_MODULE}`,
             documentation: exp.documentation
               ? {
                   value: `${exp.documentation}\n\n---\n\n${existingImport.exists
-                    ? 'Will merge with existing import from plugin-api'
+                    ? `Will merge with existing import from ${PLUGIN_TYPES_MODULE}`
                     : `Will add: \`${importStatement}\``}`
                 }
               : existingImport.exists
-                ? 'Will merge with existing import from plugin-api'
+                ? `Will merge with existing import from ${PLUGIN_TYPES_MODULE}`
                 : `Will add: ${importStatement}`,
             additionalTextEdits: additionalEdits,
             sortText: '0' + exp.name, // Sort plugin API types high
@@ -1302,7 +1332,7 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
           return
         }
 
-        const importStatement = `import { ${exp.name} } from "plugin-api"`
+        const importStatement = `import { ${exp.name} } from "${PLUGIN_TYPES_MODULE}"`
         const insertText = exp.name
 
         let kind = monaco.languages.CompletionItemKind.Variable
@@ -1335,12 +1365,12 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
               suggestions.push({
                 label: {
                   label: exp.name,
-                  description: 'plugin-api',
+                  description: PLUGIN_TYPES_MODULE,
                 },
                 kind: kind,
                 insertText: inlineInsertText,
                 range: range,
-                detail: `(${exp.kind}) from plugin-api`,
+                detail: `(${exp.kind}) from ${PLUGIN_TYPES_MODULE}`,
                 documentation: exp.documentation ? { value: exp.documentation } : undefined,
                 sortText: '0' + exp.name,
                 additionalTextEdits: [{
@@ -1350,29 +1380,29 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
                     endLineNumber: position.lineNumber,
                     endColumn: position.column + insertText.length + (needsSpaceAfterBrace ? 1 : 0) + 2,
                   },
-                  text: ` from "plugin-api"`,
+                  text: ` from "${PLUGIN_TYPES_MODULE}"`,
                 }],
               })
               return
             } else {
-              inlineInsertText = `${insertText} from "plugin-api"`
+              inlineInsertText = `${insertText} from "${PLUGIN_TYPES_MODULE}"`
             }
           }
 
           suggestions.push({
             label: {
               label: exp.name,
-              description: 'plugin-api',
+              description: PLUGIN_TYPES_MODULE,
             },
             kind: kind,
             insertText: inlineInsertText,
             range: range,
-            detail: `(${exp.kind}) from plugin-api`,
+            detail: `(${exp.kind}) from ${PLUGIN_TYPES_MODULE}`,
             documentation: exp.documentation ? { value: exp.documentation } : undefined,
             sortText: '0' + exp.name,
           })
         } else {
-          const existingImport = findExistingImport(currentContent, 'plugin-api')
+          const existingImport = findPluginTypesImport(currentContent)
 
           let additionalEdits: any[] = []
 
@@ -1386,7 +1416,7 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
             const allNamed = uniqueNamed.join(', ')
 
             // For JavaScript, we can still use 'import type' syntax in .js files with JSDoc
-            const newImportLine = `import { ${allNamed} } from "plugin-api"`
+            const newImportLine = `import { ${allNamed} } from "${existingImport.path}"`
 
             additionalEdits = [{
               range: {
@@ -1412,20 +1442,20 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
           suggestions.push({
             label: {
               label: exp.name,
-              description: 'plugin-api',
+              description: PLUGIN_TYPES_MODULE,
             },
             kind: kind,
             insertText: insertText,
             range: range,
-            detail: `(${exp.kind}) Auto import from plugin-api`,
+            detail: `(${exp.kind}) Auto import from ${PLUGIN_TYPES_MODULE}`,
             documentation: exp.documentation
               ? {
                   value: `${exp.documentation}\n\n---\n\n${existingImport.exists
-                    ? 'Will merge with existing import from plugin-api'
+                    ? `Will merge with existing import from ${PLUGIN_TYPES_MODULE}`
                     : `Will add: \`${importStatement}\``}`
                 }
               : existingImport.exists
-                ? 'Will merge with existing import from plugin-api'
+                ? `Will merge with existing import from ${PLUGIN_TYPES_MODULE}`
                 : `Will add: ${importStatement}`,
             additionalTextEdits: additionalEdits,
             sortText: '0' + exp.name,
@@ -1870,7 +1900,8 @@ export function updateMonacoFileSystem(pluginId: string, files: Record<string, a
 
   // Clear all old plugin files by setting them to empty string
   Object.keys(existingLibs).forEach(path => {
-    if (path.startsWith('file:///') && !path.includes('plugin-api') && !path.includes('json-module')) {
+    // The editor's own typings live under node_modules/; only plugin files are cleared.
+    if (path.startsWith('file:///') && !path.startsWith(TYPINGS_ROOT)) {
       monaco.typescript.typescriptDefaults.addExtraLib('', path)
       monaco.typescript.javascriptDefaults.addExtraLib('', path)
     }
