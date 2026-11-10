@@ -1,6 +1,6 @@
 import * as monaco from 'monaco-editor'
 import { createPopover } from './popover'
-import { getEditorPrefs, saveEditorPrefs } from './monacoSetup'
+import { getEditorPrefs, saveEditorPrefs } from './monaco/themes'
 
 /**
  * The editor's chrome around Monaco: the header (open plugin, breadcrumb,

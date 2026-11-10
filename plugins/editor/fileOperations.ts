@@ -3,27 +3,7 @@ import type { EditorPluginData } from '@client/utils/pluginEditorStorage.ts'
 import { getLanguageFromPath } from '@client/utils/pluginEditorStorage.ts'
 import type { StatusType } from './types'
 import { confirmDialog } from './dialogs'
-
-// Helper function to infer TypeScript type from JSON value
-function inferJsonType(value: any): string {
-  if (value === null) return 'null'
-  if (Array.isArray(value)) {
-    if (value.length === 0) return 'any[]'
-    const itemTypes = value.map(item => inferJsonType(item))
-    const uniqueTypes = [...new Set(itemTypes)]
-    return uniqueTypes.length === 1 ? `${uniqueTypes[0]}[]` : '(' + uniqueTypes.join(' | ') + ')[]'
-  }
-  if (typeof value === 'object') {
-    const props = Object.entries(value)
-      .map(([key, val]) => `  ${JSON.stringify(key)}: ${inferJsonType(val)}`)
-      .join(';\n')
-    return `{\n${props}\n}`
-  }
-  if (typeof value === 'string') return 'string'
-  if (typeof value === 'number') return 'number'
-  if (typeof value === 'boolean') return 'boolean'
-  return 'any'
-}
+import { registerPluginFileLib, unregisterPluginFileLib } from './monaco/typings'
 
 export async function deleteFile(
   filePath: string,
@@ -170,37 +150,9 @@ export function renameFile(
     oldMonacoModel.dispose()
   }
 
-  // Update Monaco virtual file system (for JS/TS/JSON files)
-  const newLanguage = getLanguageFromPath(newPath)
-  if (newLanguage === 'typescript' || newLanguage === 'javascript') {
-    // Clear old path
-    monaco.typescript.typescriptDefaults.addExtraLib('', `file:///${pluginId}/${oldPath}`)
-    monaco.typescript.javascriptDefaults.addExtraLib('', `file:///${pluginId}/${oldPath}`)
-
-    // Add new path
-    monaco.typescript.typescriptDefaults.addExtraLib(currentContent, `file:///${pluginId}/${newPath}`)
-    monaco.typescript.javascriptDefaults.addExtraLib(currentContent, `file:///${pluginId}/${newPath}`)
-  } else if (newLanguage === 'json') {
-    // For JSON files, clear old module and create new one using .d.ts extension
-    const oldDtsUri = `file:///${pluginId}/${oldPath}`.replace('.json', '.json.d.ts')
-    monaco.typescript.typescriptDefaults.addExtraLib('', oldDtsUri)
-    monaco.typescript.javascriptDefaults.addExtraLib('', oldDtsUri)
-
-    const dtsUri = `file:///${pluginId}/${newPath}`.replace('.json', '.json.d.ts')
-    try {
-      const jsonContent = JSON.parse(currentContent || '{}')
-      const inferredType = inferJsonType(jsonContent)
-      const tsModuleContent = `declare const value: ${inferredType};
-export default value;`
-      monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, dtsUri)
-      monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, dtsUri)
-    } catch {
-      const tsModuleContent = `declare const value: any;
-export default value;`
-      monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, dtsUri)
-      monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, dtsUri)
-    }
-  }
+  // Move the file in Monaco's TypeScript view of the plugin, so imports of it resolve
+  unregisterPluginFileLib(pluginId, oldPath)
+  registerPluginFileLib(pluginId, newPath, plugin.files[newPath])
 
   // Update entry point if necessary
   if (plugin.entryPoint === oldPath) {
