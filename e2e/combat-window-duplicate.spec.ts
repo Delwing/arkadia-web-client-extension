@@ -136,4 +136,48 @@ test.describe('Combat window duplicate to main', () => {
         // With the popup closed everything goes to the main window as usual.
         await waitForOutputContaining(page, 'Orka');
     });
+
+    test('Kondycje copies condition lines to the window and can be switched off', async ({page}) => {
+        await setup(page);
+        const combatWindow = await openCombatWindow(page);
+        const conditions = combatWindow.locator('.combat-popup__message--hp');
+
+        await pushText(page, 'Goblin jest ciezko ranny.');
+
+        // A copy in the window, the line itself still in main.
+        await expect(conditions).toHaveCount(1);
+        await expect(conditions.first()).toContainText('ciezko ranny');
+        await waitForOutputContaining(page, 'Goblin jest ciezko ranny');
+
+        const toggle = combatWindow.getByRole('button', {name: 'Kondycje'});
+        await toggle.click();
+        await expect(conditions).toHaveCount(0);
+
+        await pushText(page, 'Troll jest lekko ranny.');
+        await waitForOutputContaining(page, 'Troll jest lekko ranny');
+
+        // Switched back on: only the first line was captured.
+        await toggle.click();
+        await expect(conditions).toHaveCount(1);
+        await expect(combatWindow).not.toContainText('Troll');
+    });
+
+    test('condition lines leave the main window when switched off in the cog', async ({page}) => {
+        await setup(page);
+        const combatWindow = await openCombatWindow(page);
+        const conditions = combatWindow.locator('.combat-popup__message--hp');
+        const mainOutput = page.locator('#main_text_output_msg_wrapper');
+
+        await combatWindow.locator('.panel-button--settings').click();
+        const panel = page.locator('.window-settings');
+        await panel.locator('.window-settings__toggle', {hasText: 'Kondycje także w głównym oknie'}).click();
+
+        await pushText(page, 'Goblin jest ciezko ranny.');
+        // A marker line after it, so "not in main" is checked once main has caught up.
+        await pushText(page, 'Wieje wiatr.');
+
+        await expect(conditions).toHaveCount(1);
+        await waitForOutputContaining(page, 'Wieje wiatr');
+        await expect(mainOutput).not.toContainText('Goblin jest ciezko ranny');
+    });
 });

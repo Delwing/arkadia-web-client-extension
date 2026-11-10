@@ -115,6 +115,8 @@ export default async function initLogFileSaver(client: SessionClient) {
     eventBus.on("combat.newMessage", (entry: CombatEntry) => {
         if (!active) return;
         if (entry.type === "separator") return;
+        // A copy of a line still shown in main: that line is logged already.
+        if (entry.alsoInMain) return;
         const htmlText = entry.buffer.toHtml();
         const cleanedText = htmlText.replace(CLICK_TAG_REG, "");
         addEntry(cleanedText, entry.type, eventNow());

@@ -7,8 +7,10 @@ import { useAutoScroll } from './hooks/useAutoScroll';
 import {
     getCombatHistory,
     setCombatRedirectSetting,
+    setCombatConditionCapture,
+    setCombatConditionsToMain,
     CombatEntry,
-    CombatMessageType
+    CombatEntryType
 } from '../client/scripts/combatWindow';
 import { setSpellHitsToMain } from '../client/scripts/spells';
 import { HeaderButton } from '@web-ui/primitives';
@@ -28,18 +30,20 @@ const DEFAULT_SPLIT_HEIGHT = 120;
 
 type ToggleConfig = {
     label: string;
-    type: CombatMessageType;
+    type: CombatEntryType;
 };
 
 // Spell hits are redirected like any combat line; by default a copy stays in the main window.
 const COMBAT_SETTINGS_FIELDS: WindowSettingField[] = [
     { type: 'toggle', key: 'spellsToMain', label: 'Czary także w głównym oknie', default: true },
+    { type: 'toggle', key: 'conditionsToMain', label: 'Kondycje także w głównym oknie', default: true },
 ];
 
 const TOGGLES: ToggleConfig[] = [
     { label: "Swoja", type: "combat.avatar" },
     { label: "Drużyny", type: "combat.team" },
     { label: "Innych", type: "combat.others" },
+    { label: "Kondycje", type: "hp" },
 ];
 
 const CombatPopup: React.FC = () => {
@@ -51,11 +55,17 @@ const CombatPopup: React.FC = () => {
     const [showAvatar, setShowAvatar] = usePopupSetting(POPUP_ID, 'showAvatar', true);
     const [showTeam, setShowTeam] = usePopupSetting(POPUP_ID, 'showTeam', true);
     const [showOthers, setShowOthers] = usePopupSetting(POPUP_ID, 'showOthers', true);
+    const [showHp, setShowHp] = usePopupSetting(POPUP_ID, 'showHp', true);
     const [spellsToMain] = usePopupSetting(POPUP_ID, 'spellsToMain', true);
 
     useEffect(() => {
         setSpellHitsToMain(spellsToMain);
     }, [spellsToMain]);
+
+    const [conditionsToMain] = usePopupSetting(POPUP_ID, 'conditionsToMain', true);
+    useEffect(() => {
+        setCombatConditionsToMain(conditionsToMain);
+    }, [conditionsToMain]);
 
     // Sync toggle states with redirect settings - only capture when popup is open
     useEffect(() => {
@@ -69,6 +79,10 @@ const CombatPopup: React.FC = () => {
     useEffect(() => {
         setCombatRedirectSetting("combat.others", isOpen && showOthers);
     }, [isOpen, showOthers]);
+
+    useEffect(() => {
+        setCombatConditionCapture(isOpen && showHp);
+    }, [isOpen, showHp]);
 
     // Data management with automatic event subscription
     // Read by the (memoized) update transform, which must not re-subscribe
@@ -88,25 +102,28 @@ const CombatPopup: React.FC = () => {
     });
 
     // Get current toggle states
-    const toggleStates: Record<CombatMessageType, boolean> = {
+    const toggleStates: Record<CombatEntryType, boolean> = {
         "combat.avatar": showAvatar,
         "combat.team": showTeam,
         "combat.others": showOthers,
+        "hp": showHp,
     };
 
-    const toggleSetters: Record<CombatMessageType, (value: boolean) => void> = {
+    const toggleSetters: Record<CombatEntryType, (value: boolean) => void> = {
         "combat.avatar": setShowAvatar,
         "combat.team": setShowTeam,
         "combat.others": setShowOthers,
+        "hp": setShowHp,
     };
 
     // Memoized: it is useAutoScroll's dep, and a fresh array on an unrelated
     // render (the split view opening) would re-pin and swallow the next scroll.
     const displayedMessages = useMemo(() => {
-        const shown: Record<CombatMessageType, boolean> = {
+        const shown: Record<CombatEntryType, boolean> = {
             "combat.avatar": showAvatar,
             "combat.team": showTeam,
             "combat.others": showOthers,
+            "hp": showHp,
         };
 
         // Filter messages based on active toggles, then clean up separators
@@ -125,7 +142,7 @@ const CombatPopup: React.FC = () => {
 
             return hasMsgBefore && hasMsgAfter;
         });
-    }, [messages, showAvatar, showTeam, showOthers]);
+    }, [messages, showAvatar, showTeam, showOthers, showHp]);
 
     // Auto-scroll, plus the split view that lets the fight be read while it is
     // still scrolling past — the same engine the main output runs on.

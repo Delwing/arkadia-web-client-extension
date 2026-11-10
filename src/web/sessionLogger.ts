@@ -201,6 +201,8 @@ export default async function initSessionLogger(client: SessionClient) {
   eventBus.on('combat.newMessage', async (entry: CombatEntry) => {
     if (!loggingEnabled) return;
     if (entry.type === 'separator') return;
+    // A copy of a line still shown in main: that line is logged already.
+    if (entry.alsoInMain) return;
     const htmlText = entry.buffer.toHtml();
     await write(htmlText.replace(CLICK_TAG_REG, ''), entry.type);
   });

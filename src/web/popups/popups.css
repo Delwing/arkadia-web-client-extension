@@ -1690,6 +1690,10 @@ select.popup-input optgroup {
   border-left: 2px solid var(--popup-data-orange-light);
 }
 
+.combat-popup__message--hp {
+  border-left: 2px solid var(--popup-danger);
+}
+
 .combat-popup__separator {
   height: 1px;
   margin: 0.5rem 0;
@@ -1728,6 +1732,16 @@ select.popup-input optgroup {
 
 .popup-header-btn.is-active.combat-popup__toggle--others:hover {
   background-color: rgba(251, 146, 60, 0.3);
+}
+
+.popup-header-btn.is-active.combat-popup__toggle--hp {
+  background-color: var(--popup-danger-bg);
+  border-color: var(--popup-danger-border);
+  color: var(--popup-danger);
+}
+
+.popup-header-btn.is-active.combat-popup__toggle--hp:hover {
+  background-color: var(--popup-danger-hover-bg);
 }
 
 /* ── herb — manager toggle + text window (pipe/char-state) ───────────── */

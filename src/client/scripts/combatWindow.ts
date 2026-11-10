@@ -7,9 +7,14 @@ const HISTORY_LIMIT = 200;
 
 export type CombatMessageType = "combat.avatar" | "combat.team" | "combat.others";
 
+/** "hp" is a condition line ("Jest lekko ranny.") captured by the "Kondycje" toggle. */
+export type CombatEntryType = CombatMessageType | "hp";
+
 export type CombatEntry = {
     buffer: AnsiAwareBuffer;
-    type: CombatMessageType;
+    type: CombatEntryType;
+    /** The line is also shown (and so logged) in the main window. */
+    alsoInMain?: boolean;
 } | {
     type: "separator";
 };
@@ -24,6 +29,27 @@ const redirectSettings: Record<CombatMessageType, boolean> = {
     "combat.others": false,
 };
 
+// Condition lines ("Kondycje", as in Mudlet). By default they are copied and
+// stay in the main window too; with conditionsToMain off they are moved.
+let captureConditions = false;
+let conditionsToMain = true;
+
+export function setCombatConditionCapture(enabled: boolean): void {
+    captureConditions = enabled;
+}
+
+export function setCombatConditionsToMain(enabled: boolean): void {
+    conditionsToMain = enabled;
+}
+
+// Someone's (or your own) condition, from `kondycja`, `ob` and the like:
+// "Jestes w swietnej kondycji.", "Goblin jest ciezko ranny.", "Jest ledwo zywa."
+const CONDITION_PATTERN = /(?:^|\s)[Jj]est(?:es)? (?:ledwo zyw[ya]|ciezko rann[ya]|w zlej kondycji|lekko rann[ya]|rann[ya]|w dobrym stanie|w swietnej kondycji)\b/;
+
+export function isConditionLine(text: string): boolean {
+    return !text.startsWith("Wyglada") && CONDITION_PATTERN.test(text);
+}
+
 export function getCombatHistory(): CombatEntry[] {
     return combatHistory;
 }
@@ -37,17 +63,20 @@ export function setCombatRedirectSetting(type: CombatMessageType, enabled: boole
     eventBus.emit("combat.settingsChanged", { ...redirectSettings });
 }
 
-const combatTypes: CombatMessageType[] = ["combat.avatar", "combat.team", "combat.others"];
+const LOOK_COMMANDS = new Set(["zerknij", "spojrz", "sp"]);
+
+const combatTypes: CombatMessageType[] =["combat.avatar", "combat.team", "combat.others"];
 
 function isCombatType(type: string): type is CombatMessageType {
     return combatTypes.includes(type as CombatMessageType);
 }
 
 export default function initCombatWindow(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
-    function addEntry(buffer: AnsiAwareBuffer, type: CombatMessageType) {
+    function addEntry(buffer: AnsiAwareBuffer, type: CombatEntryType, alsoInMain = false) {
         const entry: CombatEntry = {
             buffer: buffer.clone(),
             type,
+            ...(alsoInMain ? { alsoInMain } : {}),
         };
         combatHistory.push(entry);
         if (combatHistory.length > HISTORY_LIMIT) {
@@ -83,13 +112,33 @@ export default function initCombatWindow(client: Client, aliases?: { pattern: Re
         "combatWindow"
     );
 
+    // Condition lines: always go to the window; stay in main unless conditionsToMain is off.
+    client.Triggers.registerTrigger(
+        (line: AnsiAwareBuffer, _matches: RegExpMatchArray, type: string) => {
+            if (!captureConditions || isCombatType(type)) return undefined;
+            return isConditionLine(line.text.trim()) ? [] as unknown as RegExpMatchArray : undefined;
+        },
+        (line: AnsiAwareBuffer) => {
+            addEntry(line, "hp", conditionsToMain);
+            return conditionsToMain ? line : line.markAsDeleted();
+        },
+        "combatWindow"
+    );
+
     client.on("client.disconnect", () => {
         combatHistory = [];
         eventBus.emit("combat.cleared");
     });
 
+    // Looking around sends room info too, without moving (as Mudlet's scripts.last_send check).
+    let lastCommand = "";
+    client.on("command", (command = "") => {
+        lastCommand = command.trim().toLowerCase();
+    });
+
     // Add separator on location change, but only if there are combat messages since last separator
     client.on("gmcp.room.info", () => {
+        if (LOOK_COMMANDS.has(lastCommand)) return;
         // Only add separator if:
         // 1. There are entries in history
         // 2. The last entry is not already a separator
