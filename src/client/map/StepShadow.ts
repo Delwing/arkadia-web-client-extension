@@ -1,8 +1,5 @@
 import {stepTarget} from "./exitResolution";
 
-/** A bare look around, which the game answers with a room.info like a step. Arkadia has no `l`. */
-export const LOOK_COMMAND = /^(?:sp|spojrz|zerknij)$/;
-
 /**
  * Something sent to the game that will be answered by one `gmcp.room.info`: a step
  * the player took, or a bare look around.

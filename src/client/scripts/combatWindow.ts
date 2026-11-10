@@ -2,6 +2,7 @@ import Client from "../Client";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import { resolveDuplicateToMain } from "./duplicateToMain";
+import { isLookCommand } from "@client/lookCommand.ts";
 
 const HISTORY_LIMIT = 200;
 
@@ -62,8 +63,6 @@ export function setCombatRedirectSetting(type: CombatMessageType, enabled: boole
     redirectSettings[type] = enabled;
     eventBus.emit("combat.settingsChanged", { ...redirectSettings });
 }
-
-const LOOK_COMMANDS = new Set(["zerknij", "spojrz", "sp"]);
 
 const combatTypes: CombatMessageType[] =["combat.avatar", "combat.team", "combat.others"];
 
@@ -131,14 +130,14 @@ export default function initCombatWindow(client: Client, aliases?: { pattern: Re
     });
 
     // Looking around sends room info too, without moving (as Mudlet's scripts.last_send check).
-    let lastCommand = "";
+    let lastWasLook = false;
     client.on("command", (command = "") => {
-        lastCommand = command.trim().toLowerCase();
+        lastWasLook = isLookCommand(command);
     });
 
     // Add separator on location change, but only if there are combat messages since last separator
     client.on("gmcp.room.info", () => {
-        if (LOOK_COMMANDS.has(lastCommand)) return;
+        if (lastWasLook) return;
         // Only add separator if:
         // 1. There are entries in history
         // 2. The last entry is not already a separator

@@ -2,6 +2,7 @@ import Client from "../Client";
 import {matchWhen} from "@client/Triggers.ts";
 import {directionToStub, getLongDir, isDirection, isPolishDirection, polishToEnglish} from "@shared/map/directions";
 import {stripPolishCharacters} from "@shared/stripPolishCharacters.ts";
+import {isLookCommand} from "@client/lookCommand.ts";
 import {parseExitString} from "./shortExits";
 import {parseDirectionBypass} from "./directionBypass";
 import {gmcp} from "../gmcp";
@@ -944,8 +945,7 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
     client.registerCommandHook("raon-labyrinth-mapper", (command) => {
         if (!isActive) return undefined;
 
-        const cmd = stripPolishCharacters(command).trim();
-        if (cmd === 'sp' || cmd === 'spojrz') {
+        if (isLookCommand(command)) {
             pendingLook = true;
             return undefined;
         }
