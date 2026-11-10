@@ -28,7 +28,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
-import { SETTINGS_CATEGORIES, SETTINGS_GROUP_LABELS, type SettingsCategoryKey } from '../src/web/settings/categories.ts';
+import { SETTINGS_CATEGORIES, SETTINGS_GROUP_LABELS, type SettingsCategoryKey } from '../src/web/settings/categoryList.ts';
 import { KB_FORMAT_VERSION, PROPOSAL_KINDS, estimateTokens, projectFat, projectLean, settingProposalKey } from '../src/shared/assistant/knowledgeBundle.ts';
 import type {
     CommandEntry,
@@ -779,7 +779,7 @@ function refineControl(base: SettingControl, el: JsxElementLike): SettingControl
 // ---------------------------------------------------------------------------
 
 interface PanelSpec {
-    /** Page key in `SETTINGS_CATEGORIES` (src/web/settings/categories.ts). */
+    /** Page key in `SETTINGS_CATEGORIES` (src/web/settings/categoryList.ts). */
     category: SettingsCategoryKey;
     /** Files rendering that page, relative to the repo root. */
     files: string[];
@@ -794,7 +794,7 @@ interface PanelSpec {
 const MENU = 'Menu (☰)';
 const SETTINGS_DIALOG = 'Ustawienia';
 
-const CATEGORIES_FILE = 'src/web/settings/categories.ts';
+const CATEGORIES_FILE = 'src/web/settings/categoryList.ts';
 const GENERAL_FORM = 'src/web/options/Settings.tsx';
 
 const SETTINGS_PANELS: PanelSpec[] = [
@@ -827,7 +827,7 @@ const SETTINGS_PANELS: PanelSpec[] = [
     {
         category: 'ui-other',
         files: ['src/web/uiSettings/sections/OtherSections.tsx', 'src/web/uiSettings/sections/LogsSection.tsx'],
-        sections: ['Inne', 'Logi'],
+        sections: ['Inne', 'Wspólny spis złomu', 'Logi'],
     },
     { category: 'ui-experimental', files: ['src/web/uiSettings/sections/ExperimentalSection.tsx'] },
     {
@@ -1381,15 +1381,15 @@ function buildSchemas(): { schemas: SchemaCatalog; events: EventEntry[]; macroTy
     }
     const events = eventsValue.value as EventEntry[];
 
-    // Built-in macro types, from the `BuiltInMacroType` union.
+    // Built-in macro types, from the `BUILT_IN_MACRO_TYPES` array the
+    // `BuiltInMacroType` union is derived from.
     const macroTypes = (() => {
-        for (const stmt of triggerSf.statements) {
-            if (ts.isTypeAliasDeclaration(stmt) && stmt.name.text === 'BuiltInMacroType') {
-                const members = unionLiterals(stmt.type);
-                if (members) return members.map(String);
-            }
+        const decl = lookupConst('BUILT_IN_MACRO_TYPES', path.join(ROOT, 'src/client/scripts/userTriggers.ts'));
+        const value = decl && evaluate(decl.node, decl.file);
+        if (value?.ok && Array.isArray(value.value) && value.value.length > 0 && value.value.every(v => typeof v === 'string')) {
+            return value.value as string[];
         }
-        return fail('BuiltInMacroType union not found in userTriggers.ts');
+        return fail('BUILT_IN_MACRO_TYPES is not a statically-evaluable string array in userTriggers.ts');
     })();
 
     const aliasProps = interfaceProps(aliasSf, 'UserAlias');
