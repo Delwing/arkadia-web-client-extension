@@ -1,12 +1,12 @@
 import initAttackBeep from '@client/scripts/attackBeep';
 import Triggers from '@client/Triggers';
-import {refresh, subscribe} from '@modules/data/peopleStore';
+import {refresh, subscribeMerged as subscribe} from '@modules/data/peopleLoader';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { characterStorage } from '@modules/core/storage';
 import { setTestSettings } from '../helpers/testSettings';
 
-vi.mock('@modules/data/peopleStore', () => ({
-  subscribe: jest.fn(),
+vi.mock('@modules/data/peopleLoader', () => ({
+  subscribeMerged: jest.fn(),
   refresh: jest.fn(),
 }));
 
@@ -14,13 +14,15 @@ const subscribeMock = subscribe as jest.MockedFunction<typeof subscribe>;
 const refreshMock = refresh as jest.MockedFunction<typeof refresh>;
 
 const MOCK_PEOPLE = [
-  { name: 'Intia', description: 'wojowniczka', guild: 'CKN' },
-  { name: 'Eamon', description: 'wysoki mezczyzna', guild: 'CKN' },
+  { name: 'Intia', description: 'wojowniczka', guild: 'CKN', isEnemy: false },
+  { name: 'Eamon', description: 'wysoki mezczyzna', guild: 'CKN', isEnemy: false },
+  { name: 'Zbojca', description: 'brudny zbir', guild: 'Brak', isEnemy: true },
 ];
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   sendEvent = jest.fn();
+  on = jest.fn();
 }
 
 describe('attack beep triggers', () => {
@@ -143,6 +145,14 @@ describe('attack beep triggers', () => {
     expect(enemyCalls).toEqual([['enemy.attack', { attacker: 'Intia' }]]);
     const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:category');
     expect(beepCalls).toHaveLength(1);
+  });
+
+  test('beeps for a person marked as an enemy, whatever their guild', () => {
+    setTestSettings({ enemyGuilds: [] });
+    parse('Zbojca atakuje cie!');
+    parse('Intia atakuje cie!');
+    const enemyCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'enemy.attack');
+    expect(enemyCalls).toEqual([['enemy.attack', { attacker: 'Zbojca' }]]);
   });
 
   test('does not beep on plain phrase trigger', () => {

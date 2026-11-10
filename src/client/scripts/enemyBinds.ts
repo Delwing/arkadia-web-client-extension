@@ -1,7 +1,6 @@
 import Client from "../Client";
 import { createAttackController } from "../utils/attackController";
-import { subscribeMerged, refresh as refreshPeopleStore } from '@modules/data/peopleLoader';
-import type { PersonListEntry } from '../types/people';
+import { getEnemyDetector } from "../EnemyDetector";
 import { colorString, createColorFormat } from '@client/Colors.ts';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { globalStorage, characterStorage } from '@modules/core/storage';
@@ -36,11 +35,10 @@ export default function initEnemyBinds(
 ) {
     const list = aliases ?? client.aliases;
     const attackController = createAttackController(client);
+    const enemyDetector = getEnemyDetector(client);
 
     let bindSlots: (number | null)[] = [null, null, null];
     let enabled = true;
-    let enemyGuilds: string[] = [];
-    let peopleCache: PersonListEntry[] = [];
     let keepUnchanged = false;
     let showMode: 'always' | 'whenBound' | 'never' = 'always';
     let enabledSlots: [boolean, boolean, boolean] = [true, true, true];
@@ -48,19 +46,6 @@ export default function initEnemyBinds(
     let blockCommandTemplate = '';
     let enemyBindKeys: Bind[] = [...defaultEnemyBinds];
     let enemyBlockBindKeys: Bind[] = [...defaultEnemyBlockBinds];
-
-    subscribeMerged(snapshot => {
-        peopleCache = snapshot ?? [];
-    });
-
-    function ensurePeopleLoaded() {
-        return refreshPeopleStore().catch(error => {
-            console.warn('Failed to load people database', error);
-            return undefined;
-        });
-    }
-
-    ensurePeopleLoaded().catch(() => undefined);
 
     // Load enemy binds keys from storage and listen for changes
     function applyEnemyBindKeys(b: any) {
@@ -87,16 +72,12 @@ export default function initEnemyBinds(
 
     const applySettings = (settings: any) => {
         const detail = (settings ?? defaultSettings) as {
-            enemyGuilds?: unknown;
             enemyBindsKeepUnchanged?: boolean;
             enemyBindsShowMode?: 'always' | 'whenBound' | 'never';
             enemyBindsEnabledSlots?: unknown;
             enemyBindsAttackCommand?: unknown;
             enemyBindsBlockCommand?: unknown;
         };
-        if (Array.isArray(detail.enemyGuilds)) {
-            enemyGuilds = detail.enemyGuilds.filter(g => typeof g === 'string') as string[];
-        }
         keepUnchanged = detail.enemyBindsKeepUnchanged ?? false;
         showMode = detail.enemyBindsShowMode ?? 'always';
         if (Array.isArray(detail.enemyBindsEnabledSlots) && detail.enemyBindsEnabledSlots.length === 3) {
@@ -142,16 +123,6 @@ export default function initEnemyBinds(
 
     function blockSlotTarget(objectId: number) {
         runSteps(blockCommandTemplate, objectId, defaultBlock);
-    }
-
-    function isEnemy(desc: string): boolean {
-        const lowerDesc = desc.toLowerCase();
-        return peopleCache.some(p => {
-            if (p.description.toLowerCase() !== lowerDesc && p.name.toLowerCase() !== lowerDesc) {
-                return false;
-            }
-            return p.isEnemy || enemyGuilds.includes(p.guild);
-        });
     }
 
     function formatBindLabel(bind: Bind): string {
@@ -229,13 +200,13 @@ export default function initEnemyBinds(
         Object.keys(data).forEach(numStr => {
             const num = parseInt(numStr);
             const obj = data[numStr];
-            if (obj.desc && isEnemy(obj.desc)) {
+            if (obj.desc && enemyDetector.isEnemy(obj.desc)) {
                 rawEnemies.push({ num, desc: obj.desc });
             }
         });
 
         // Let plugins reorder the candidate list and/or inject enemies the built-in
-        // isEnemy() check would otherwise miss, before slots are assigned.
+        // enemy check would otherwise miss, before slots are assigned.
         const enemies = enemyBindResolvers.apply(
             rawEnemies,
             client.ObjectManager.getObjectsOnLocation()

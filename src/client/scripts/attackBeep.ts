@@ -1,10 +1,7 @@
 import Client from "../Client";
 import {createColorFormat} from "@client/Colors.ts";
-import { subscribe as subscribeToPeopleStore, refresh as refreshPeopleStore } from '@modules/data/peopleStore';
-import type { PersonEntry } from '../types/people';
 import {AnsiAwareBuffer} from "../ansi/FormatState";
-import { characterStorage } from "@modules/core/storage";
-import { defaultSettings } from "@modules/core/defaultSettings";
+import { getEnemyDetector } from "../EnemyDetector";
 
 const RED = createColorFormat("#ff0000");
 
@@ -33,44 +30,13 @@ function highlightPhrase(buffer: AnsiAwareBuffer): AnsiAwareBuffer {
 
 export default function initAttackBeep(client: Client) {
     const tag = "attackBeep";
-    let enemyGuilds: string[] = [];
-    let peopleCache: PersonEntry[] = [];
-
-    subscribeToPeopleStore(snapshot => {
-        peopleCache = snapshot ?? [];
-    });
-
-    function ensurePeopleLoaded() {
-        return refreshPeopleStore().catch(error => {
-            console.warn('Failed to load people database', error);
-            return undefined;
-        });
-    }
-
-    ensurePeopleLoaded().catch(() => undefined);
-
-    // Find a person's guild by name, or by description when the attacker is
-    // not introduced ("Muskularny zielonooki krasnolud atakuje cie!")
-    function findPersonGuild(name: string): string | null {
-        const lowered = name.toLowerCase();
-        const person = peopleCache.find(p => p.name === name)
-            ?? peopleCache.find(p => p.description?.toLowerCase() === lowered);
-        return person ? person.guild : null;
-    }
-
-    // Function to check if an attacker should trigger the beep
-    function shouldBeep(attackerName: string): boolean {
-        if (enemyGuilds.length === 0) {
-            return false; // If no enemy guilds selected no beep needed
-        }
-        const guild = findPersonGuild(attackerName);
-        // Beep only when we know the attacker belongs to an enemy guild
-        return !!guild && enemyGuilds.includes(guild);
-    }
+    // The attacker is a name, or a description when not introduced
+    // ("Muskularny zielonooki krasnolud atakuje cie!"); the shared check takes both.
+    const enemyDetector = getEnemyDetector(client);
 
     const handleAttack = (line: AnsiAwareBuffer, matches: RegExpMatchArray, always: boolean): AnsiAwareBuffer => {
         const attackerName = matches?.groups?.name
-        const isEnemy = !!attackerName && shouldBeep(attackerName);
+        const isEnemy = !!attackerName && enemyDetector.isEnemy(attackerName);
 
         // Fires for every attack line, whoever the attacker is — the
         // unconditional counterpart of "enemy.attack" below.
@@ -87,20 +53,7 @@ export default function initAttackBeep(client: Client) {
         return highlightAttack(line, upper);
     };
 
-    // Listen for settings changes
-    const applySettings = (settings: any) => {
-        const detail = (settings ?? defaultSettings) as { enemyGuilds?: unknown };
-        if (Array.isArray(detail.enemyGuilds)) {
-            enemyGuilds = [...detail.enemyGuilds];
-        }
-        ensurePeopleLoaded().catch(() => undefined);
-    };
-    applySettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', (settings) => {
-        applySettings(settings);
-    });
-
-    // Plain attack lines beep only for enemy guilds
+    // Plain attack lines beep only for enemies (marked, or of an enemy guild)
     [
         /(?<name>.*) atakuje cie!/,
         /(?<name>.*) atakuje cie nie dajac ci czasu na skontrowanie swojego ataku!/,

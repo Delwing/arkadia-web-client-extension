@@ -263,6 +263,23 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
             'Dokładnie w tym samym momencie, w którym odzywa się beep: gdy atakuje cię ktoś z gildii oznaczonej jako wroga albo ktokolwiek atakiem specjalnym (np. okrzyk bojowy, „rzuca się na ciebie”).',
         args: [{ name: 'attacker', label: 'Nazwa atakującego', type: 'string' }],
     },
+    {
+        id: 'enemy.seen',
+        label: 'Wróg w zasięgu wzroku',
+        category: 'Walka',
+        description:
+            'Gdy na lokacji pojawi się wróg (osoba oznaczona jako wróg albo z wrogiej gildii) — także gdy to ty wchodzisz tam, gdzie on stoi. '
+            + 'Grupa, która pojawi się naraz, to jedno zdarzenie. Czas liczy się osobno dla każdego wroga: żeby nie dostawać '
+            + 'sygnału przy każdym kroku pościgu, dodaj warunek, np. {secondsAway} >= 60 — zadziała, gdy wśród nowo widocznych '
+            + 'jest ktoś, kogo nie widziałeś od minuty. Pełna lista (obiekty z num, desc, name, guild, secondsAway, firstTime) '
+            + 'jest w ctx.event.enemies w skrypcie.',
+        args: [
+            { name: 'names', label: 'Wrogowie (po przecinku)', type: 'string' },
+            { name: 'count', label: 'Liczba wrogów', type: 'number' },
+            { name: 'secondsAway', label: 'Sekundy poza zasięgiem wzroku (najdłużej z nich)', type: 'number' },
+            { name: 'firstTime', label: 'Ktoś widziany pierwszy raz w tej sesji', type: 'boolean' },
+        ],
+    },
 
     // Character condition. These exist so the built-in alerts can be bound to a
     // `push` macro deliberately — nothing reaches a paired device on its own.

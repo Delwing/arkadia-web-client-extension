@@ -231,6 +231,35 @@ type PluginDestroyedPayload = {
     url: string;
 };
 
+/** One enemy that came into view. */
+export interface SeenEnemy {
+    /** The game object (`ob_<num>`). */
+    num: number;
+    desc: string;
+    name: string;
+    guild: string;
+    /** How long they were out of sight, in whole seconds; a very large number if never seen this session. */
+    secondsAway: number;
+    /** Not seen before in this session. */
+    firstTime: boolean;
+}
+
+/**
+ * An update in which enemies came into view; see the client's EnemyDetector.
+ * `enemies` is the list; the rest sums it up in plain values a trigger
+ * condition can test.
+ */
+export interface EnemySeenPayload {
+    enemies: SeenEnemy[];
+    /** Their names, comma separated. */
+    names: string;
+    count: number;
+    /** The longest any of them had been out of sight. */
+    secondsAway: number;
+    /** At least one of them was not seen before in this session. */
+    firstTime: boolean;
+}
+
 export type EnemyStatusPayload = {
     name: string;
 };
@@ -244,6 +273,7 @@ export interface PingSample {
 }
 
 export interface KnownEvents {
+    "enemy.seen": EnemySeenPayload;
     "enemy.paralyzed": EnemyStatusPayload;
     "enemy.paralyzed.end": EnemyStatusPayload;
     "enemy.broken_defense": EnemyStatusPayload;
