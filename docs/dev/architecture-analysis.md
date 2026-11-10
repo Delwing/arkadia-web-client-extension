@@ -6,7 +6,7 @@
 >
 > **Originally written 2026-05-30, re-verified 2026-07-27 and again against master on
 > 2026-10-31; the Tier 1 splits landed 2026-11-05; re-measured and the layering pass
-> landed 2026-11-08.** Re-measure before citing a number.
+> landed 2026-11-08; `Keys.tsx` split 2026-11-10.** Re-measure before citing a number.
 
 ## Progress since the original review
 
@@ -29,6 +29,7 @@
 | Client "DOM-free" claim vs. reality | **Done** (2026-11-08). `src/client` used `window`/`document`/`navigator` in ~30 places: 8 global `keydown` listeners, 7 `beforeunload`, clipboard, file save/open (`oswajanie`), legacy plugin `<script>` tags, the `add-script` URL parameter, cross-tab `storage` events, notifications, the audio-unlock gesture, three copies of Mac detection. All go through `HostPort` (`@client/ports/hostPort.ts`; browser implementation `src/web/browserHost.ts`, also installed by the unit-test setup). ESLint `no-restricted-globals` forbids the four globals in `src/client`; the one exception is `renderSegments.ts` (the renderer behind `AnsiAwareBuffer.toDom()`). |
 | `@modules → @web` (not in the original review) | **Done** (2026-11-08). `contextMenus.ts` (room/herb menus) was web UI in `@modules/core`: now `src/web/gameContextMenus.ts`, and the six client scripts that opened those menus call `UiPort.showHerbMenu` / `showRoomMenu`. `triggerSettingsReload` / `applyImportedDeviceSettings` → `src/web/deviceSettingsReload.ts`; the unused `deviceSettingsBundle.ts` deleted; two settings migrations take their web pieces as loaders from the bootstrap. Only sync v1 still `import()`s `@web/options/export` (a listed lint exception until stage 5b). |
 | `@shared → @client` reverse dependency (Tier 4), and `@modules → @client` (~20 runtime imports, not in the original review) | **Done** (2026-11-08). Moved down: `dataCache`, `wiedzaLoader` → `@modules/data`; default attack/draw/support commands → `@modules/core`; `stripPolishCharacters`, `knowledgeCategories`, `types/letter` → `@shared`. Moved up: `Colors.ts` → `@client` (≈100 client importers); `proposalValidator` → `@web/assistant` (web-only); `outputMessageHandler`, `outputText` → `@web/output`. `clientEvents.ts` now type-imports its client payload types. ESLint forbids runtime upward imports for all three lower layers (static and `import()`; type-only imports allowed). |
+| `src/web/keys/Keys.tsx` — 1,665 lines | **Done** (2026-11-10). Six jobs in one component: storage (keymaps, debounced saves, helper re-registration), the edit rules (assign a key, "gdzie działa", twins, own shortcuts), key capture (page or helper listening), the helper's status, measuring, and the render for four width steps. Now: `keyEdits.ts`, pure functions that return what an edit changes (unit-tested in `test/web/keys/keyEdits.test.ts`); hooks `useKeymapStore`, `useHelperStatus`, `useKeyCapture`, `useKeysSize`; components `KeyboardView`, `KeyDetail`, `KeysToolbar`, `CaptureOverlays` and one per list in `sections/`, sharing state through `KeysContext`. `Keys.tsx` is a ~440-line composer that owns the view state and the four layouts. Fixed on the way: an own shortcut moved to a key the browser keeps left its helper twin behind on the old key, and a built-in bind refused such a key still moved its twin. |
 
 ## The shape of the problem
 
@@ -52,13 +53,12 @@ to follow elsewhere.**
 
 ## Tier 1 — God files (break these up first)
 
-Line counts as of 2026-11-08. The six files of the 2026-10-31 list are done except
+Line counts as of 2026-11-08 (`Keys.tsx` since split, see the progress table). The six files of the 2026-10-31 list are done except
 `firebaseUnifiedSync.ts` (see the progress table); what is left is the next-largest files.
 Only the two carried-over rows have had a jobs-per-file read yet.
 
 | File | Lines | Distinct jobs crammed in | Split into |
 |---|---|---|---|
-| `src/web/keys/Keys.tsx` | 1,665 | to be analysed | to be analysed |
 | `plugins/editor/main.ts` | 2,135 | to be analysed (the largest file in the repo; was missing from this list) | to be analysed |
 | `plugins/editor/monacoSetup.ts` | 1,940 | to be analysed (missing from this list too) | to be analysed |
 | `src/web/assistant/proposalValidator.ts` | 1,385 | to be analysed (moved from `@modules/core/assistant` 2026-11-08) | to be analysed |
@@ -75,7 +75,7 @@ Next in size, not yet read: `MudClient.ts` (1,164), `transportTracker.ts` (1,118
 `plugins/editor/codingAgentPanel.ts` (1,081), `StaticMapPopup.tsx` (1,071),
 `LogViewer.tsx` (1,051), `oswajanie.ts` (1,031), `WindowManager.ts` (1,030), `clock.ts` (1,027).
 
-**Highest leverage:** `Keys.tsx` — the largest file left.
+**Highest leverage:** the plugin editor (`main.ts`, `monacoSetup.ts`) — the two largest files left.
 
 ---
 
@@ -172,7 +172,7 @@ Co-locating related files is what makes the Tier-2 duplication visible and fixab
 1. ~~Split `PluginApi.ts` by domain~~ and ~~`knowledge.ts`~~ — both done 2026-10-31; ~~the Tier 1 splits (`MapHelper`, `FormatState`, `exportUtils`, `ObjectList`, `FirebaseTab`)~~ — done 2026-11-05.
 2. ~~**Close the layering leaks**~~ — done 2026-11-08 (`HostPort`, `@modules`/`@shared` upward imports, ESLint rules).
 3. **Remove sync v1** — takes most of `firebaseUnifiedSync.ts` with it, and the last lint exception. Check Firestore first.
-4. **Analyse and split the remaining Tier 1 files**, starting with `Keys.tsx` and the plugin editor.
+4. **Analyse and split the remaining Tier 1 files** — ~~`Keys.tsx`~~ done 2026-11-10; next the plugin editor.
 5. **Finish `BaseCounter`** — migrate `herbCounter`, `whoCount` and `przybywajaCount`.
 6. **Folder reorganization** of `scripts/` and web popups — makes remaining duplication self-evident. One domain at a time: it churns imports.
 
