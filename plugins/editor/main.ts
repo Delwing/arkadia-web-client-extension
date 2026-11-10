@@ -431,7 +431,8 @@ function showPluginApiTypes(position?: IPosition | IRange) {
 function switchToFile(filePath: string, position?: IPosition | IRange) {
   if (!state.currentPlugin || !state.currentPluginId || !state.editor) return
 
-  if (filePath.startsWith("@types")) {
+  // The API typings, under the editor's own name or the npm package's
+  if (filePath.startsWith("@types") || filePath.startsWith("@arkadia/")) {
     showPluginApiTypes(position)
     return
   }
