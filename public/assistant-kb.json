@@ -45,15 +45,17 @@
       "P30 = Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Dźwięki",
       "P31 = Menu (☰) → Ustawienia → Interfejs → Wygląd → Czcionka",
       "P32 = Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd",
-      "P33 = Menu kontekstowe (prawy przycisk myszy) w oknie wyjścia",
-      "P34 = Menu (☰) → Ustawienia → Interfejs → Przyciski mobilne → Wyświetlanie",
-      "P35 = Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Powiadomienia w grze",
-      "P36 = Menu (☰) → Ustawienia → Interfejs → Stopka → Rozmiar stopki",
-      "P37 = Menu (☰) → Ustawienia → Interfejs → Stopka → Przyciski przy linii komend",
-      "P38 = Menu (☰) → Ustawienia → Interfejs → Stopka → Elementy stopki",
-      "P39 = Menu (☰) → Ustawienia → Interfejs → Stopka → Stopka na telefonie",
-      "P40 = Menu (☰) → Ustawienia → Interfejs → Komendy → Uzupełnianie",
-      "P41 = Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Czytanie na głos"
+      "P33 = Menu (☰) → Ustawienia → Interfejs → Komendy → Bind funkcyjny",
+      "P34 = Menu kontekstowe (prawy przycisk myszy) w oknie wyjścia",
+      "P35 = Menu (☰) → Ustawienia → Interfejs → Przyciski mobilne → Wyświetlanie",
+      "P36 = Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Powiadomienia w grze",
+      "P37 = Menu (☰) → Ustawienia → Interfejs → Stopka → Rozmiar stopki",
+      "P38 = Menu (☰) → Ustawienia → Interfejs → Stopka → Przyciski przy linii komend",
+      "P39 = Menu (☰) → Ustawienia → Interfejs → Stopka → Elementy stopki",
+      "P40 = Menu (☰) → Ustawienia → Interfejs → Stopka → Układ stopki",
+      "P41 = Menu (☰) → Ustawienia → Interfejs → Stopka → Stopka na telefonie",
+      "P42 = Menu (☰) → Ustawienia → Interfejs → Komendy → Uzupełnianie",
+      "P43 = Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Czytanie na głos"
     ],
     "settings": [
       "## settings.* (character)",
@@ -169,70 +171,70 @@
       "customFontUrl | Adres arkusza czcionki | P31 | string | \"\"",
       "customThemeColor | Kolor własnego motywu | P32 | string | -",
       "fontFamily | Okno wyjścia i lista obiektów | P31 | enum: default|fira-code|jetbrains-mono|cascadia-mono|vera-sans-mono|custom|system|uploaded | default",
-      "functionalBindActionColor | ? | P- | string | \"\"",
-      "functionalBindColor | ? | P- | string | #00ffaf",
-      "functionalBindInFooter | ? | P- | boolean | false",
-      "functionalBindKeyColor | ? | P- | string | #ffd787",
-      "functionalBindOutput | ? | P- | enum: full|compact|hidden | full",
-      "functionalBindTemplate | ? | P- | string | bind {key}: {action}",
+      "functionalBindActionColor | Akcja w zwykłym kolorze tekstu gry | P33 | string | \"\"",
+      "functionalBindColor | Kolor tekstu | P33 | string | #00ffaf",
+      "functionalBindInFooter | Pokazuj aktywny bind w stopce | P33 | boolean | false",
+      "functionalBindKeyColor | Kolor klawisza | P33 | string | #ffd787",
+      "functionalBindOutput | Komunikat w oknie gry | P33 | enum: full|compact|hidden | full",
+      "functionalBindTemplate | Format komunikatu | P33 | string | bind {key}: {action}",
       "highlightMessageBlocks | Wyróżniaj bloki wiadomości | P28 | boolean | false",
       "objectListCoverMarkers | Pokazuj zasłony wrogów (tarcza za nazwą) | P18 | boolean | true",
       "outputBackground | Kolor tła okna głównego | P29 | string | #242424",
       "outputBottomPadding | Dolny padding okna (px) | P18 | number 0.. | 0",
       "outputTextColor | Domyślny kolor tekstu | P29 | string | -",
-      "showTimestamps | Znaczniki czasu w oknie wyjścia | P33 | boolean | false",
+      "showTimestamps | Znaczniki czasu w oknie wyjścia | P34 | boolean | false",
       "soundCategories | Dźwięki kategorii | P30 | SoundCategories | {}",
       "systemFontFamily | Nazwa czcionki zainstalowanej w systemie | P32 | string | \"\"",
       "uploadedFontFamily | Rodzina wgranej czcionki | P32 | string | \"\"",
       "xtermPalette | Paleta kolorów | P29 | enum: arkadia|proper | arkadia",
       "## shellSettings.* (ui)",
       "fightTitleIcon | Ikona walki w tytule | P20 | boolean | true",
-      "hapticFeedback | Wibracje (haptyka) na urządzeniach mobilnych | P34 | boolean | true",
+      "hapticFeedback | Wibracje (haptyka) na urządzeniach mobilnych | P35 | boolean | true",
       "inGameUpdateNotice | Informuj o nowej wersji także w trakcie gry | P20 | boolean | false",
-      "toastDoNotDisturb | Nie przeszkadzać | P35 | boolean | false",
-      "toastDurationScale | Czas wyświetlania | P35 | number | 1",
-      "toastMaxVisible | Najwięcej naraz | P35 | number | 4",
-      "toastMutedSources | Źródła powiadomień w grze, które są wyciszone | P35 | NotificationSource[] | []",
-      "toastPosition | Pozycja powiadomień w grze | P35 | enum: top-left|top-right|bottom-right|bottom-center | top-right",
+      "toastDoNotDisturb | Nie przeszkadzać | P36 | boolean | false",
+      "toastDurationScale | Czas wyświetlania | P36 | number | 1",
+      "toastMaxVisible | Najwięcej naraz | P36 | number | 4",
+      "toastMutedSources | Źródła powiadomień w grze, które są wyciszone | P36 | NotificationSource[] | []",
+      "toastPosition | Pozycja powiadomień w grze | P36 | enum: top-left|top-right|bottom-right|bottom-center | top-right",
       "wakeLock | Blokada usypiania ekranu (Wake Lock) | P20 | boolean | true",
       "## uiSettings.* (ui)",
       "alwaysVisibleBars | Zawsze widoczne paski stanu | P21 | string[] | []",
       "barOrder | Kolejność pasków stanu | P21 | string[] | [\"hp\",\"fatigue\",\"stuffed\",\"encumbrance\",\"soaked\",\"mana\",\"improve\",\"form\",\"intox\",\"headache\",\"panic\"]",
       "buttonSize | Rozmiar przycisków (przestarzałe) | P- | number | -",
-      "contentFontSize | ? | P- | number | 0.775",
-      "footerBindsScale | Pasek bindów | P36 | number 0.8..2 | 1",
-      "footerButtons | Przyciski przy linii komend | P37 | FooterButtonConfig[] | []",
-      "footerComponents | Elementy stopki | P38 | FooterComponentConfig[] | [{\"id\":\"clock-display\",\"visible\":true,\"order\":0},{\"id\":\"transport-timer\",\"visible\":true,\"order\":1},{\"id\":\"lamp-timer\",\"visible\":true,\"order\":2},{\"id\":\"pipe-status\",\"visible\":true,\"order\":3},{\"id\":\"break-item-warning\",\"visible\":true,\"order\":4},{\"id\":\"mail-status\",\"visible\":true,\"order\":5},{\"id\":\"package-status\",\"visible\":true,\"order\":6},{\"id\":\"weapon-state\",\"visible\":true,\"order\":7},{\"id\":\"attack-mode\",\"visible\":true,\"order\":8},{\"id\":\"release-guard-timer\",\"visible\":true,\"order\":9},{\"id\":\"zask-timer\",\"visible\":true,\"order\":10},{\"id\":\"order-timer\",\"visible\":true,\"order\":11},{\"id\":\"combat-timer\",\"visible\":true,\"order\":12},{\"id\":\"world-destruction-timer\",\"visible\":true,\"order\":13},{\"id\":\"team-panel\",\"visible\":true,\"order\":14},{\"id\":\"connection-status\",\"visible\":false,\"order\":15},{\"id\":\"spell-effects\",\"visible\":true,\"order\":16}]",
-      "footerCustomBase | ? | P- | FooterPresetId | -",
-      "footerCustomLayout | ? | P- | FooterLayout | -",
-      "footerLayout | ? | P- | FooterLayoutChoice | -",
-      "footerLayoutTweaks | ? | P- | FooterLayoutTweakSet | -",
+      "contentFontSize | Rozmiar w oknie wyjścia (px) | P31 | number | 0.775",
+      "footerBindsScale | Pasek bindów | P37 | number 0.8..2 | 1",
+      "footerButtons | Przyciski przy linii komend | P38 | FooterButtonConfig[] | []",
+      "footerComponents | Elementy stopki | P39 | FooterComponentConfig[] | [{\"id\":\"clock-display\",\"visible\":true,\"order\":0},{\"id\":\"transport-timer\",\"visible\":true,\"order\":1},{\"id\":\"lamp-timer\",\"visible\":true,\"order\":2},{\"id\":\"pipe-status\",\"visible\":true,\"order\":3},{\"id\":\"break-item-warning\",\"visible\":true,\"order\":4},{\"id\":\"mail-status\",\"visible\":true,\"order\":5},{\"id\":\"package-status\",\"visible\":true,\"order\":6},{\"id\":\"weapon-state\",\"visible\":true,\"order\":7},{\"id\":\"attack-mode\",\"visible\":true,\"order\":8},{\"id\":\"release-guard-timer\",\"visible\":true,\"order\":9},{\"id\":\"zask-timer\",\"visible\":true,\"order\":10},{\"id\":\"order-timer\",\"visible\":true,\"order\":11},{\"id\":\"combat-timer\",\"visible\":true,\"order\":12},{\"id\":\"world-destruction-timer\",\"visible\":true,\"order\":13},{\"id\":\"team-panel\",\"visible\":true,\"order\":14},{\"id\":\"connection-status\",\"visible\":false,\"order\":15},{\"id\":\"spell-effects\",\"visible\":true,\"order\":16}]",
+      "footerCustomBase | Układ, z którego powstał własny | P40 | FooterPresetId | -",
+      "footerCustomLayout | Własny układ stopki | P40 | FooterLayout | -",
+      "footerLayout | Układ | P40 | FooterLayoutChoice | -",
+      "footerLayoutTweaks | Dostosowania układów stopki | P40 | FooterLayoutTweakSet | -",
       "footerMode | Tryb stopki | P21 | enum: 4|0|1|2|3 | 4",
-      "footerStatusScale | Pasek stanu i plakietki | P36 | number 0.8..2 | 1",
-      "footerUrgentChipsFirst | Pilne plakietki na początku | P38 | boolean | false",
+      "footerStatusScale | Pasek stanu i plakietki | P37 | number 0.8..2 | 1",
+      "footerUrgentChipsFirst | Pilne plakietki na początku | P39 | boolean | false",
       "keepMultibindsVisible | Zawsze pokazuj pasek multibindów | P16 | boolean | false",
       "mapHeight | Wysokość mapy (vh) | P17 | number | 30",
       "mapPosition | Położenie mapy | P17 | enum: top-overlay|bottom-overlay|right-overlay|left-overlay|top|bottom|right|left | top-overlay",
       "mapScale | Powiększenie mapy | P17 | number 0.05.. | 0.3",
-      "mobileFooterCompact | Kompaktowa stopka na telefonie | P39 | boolean | true",
-      "mobileFooterExpand | Rozwijanie stopki na telefonie | P39 | enum: toggle|expanded|collapsed | toggle",
+      "mobileFooterCompact | Kompaktowa stopka na telefonie | P41 | boolean | true",
+      "mobileFooterExpand | Rozwijanie stopki na telefonie | P41 | enum: toggle|expanded|collapsed | toggle",
       "multibindKeyHints | Skróty klawiszowe na pasku bindów | P16 | enum: auto|always|never | auto",
-      "objectsFontSize | ? | P- | number | 0.6",
+      "objectsFontSize | Rozmiar na liście obiektów (px) | P31 | number | 0.6",
       "outputMaxElements | Maksymalna liczba linii w buforze | P18 | number 100.. | 5000",
       "pingInterval | Pomiar pingu | P20 | enum: 3|10|30|60|0 | 3",
-      "showButtons | Pokazuj przyciski | P34 | boolean | true",
-      "showCombatTimer | Pokazuj licznik walki | P38 | boolean | -",
-      "showTransportLabel | Pokazuj etykietę transportu | P38 | boolean | -",
+      "showButtons | Pokazuj przyciski | P35 | boolean | true",
+      "showCombatTimer | Pokazuj licznik walki | P39 | boolean | -",
+      "showTransportLabel | Pokazuj etykietę transportu | P39 | boolean | -",
       "showVoiceButton | Przycisk mikrofonu (dyktowanie głosowe) | P26 | boolean | true",
       "splitViewHeight | Wysokość podzielonego widoku | P- | number | -",
-      "tabCompletionHint | Podpowiedź uzupełniania (Tab) za kursorem | P40 | boolean | true",
-      "tabCompletionMode | Uzupełnianie klawiszem Tab | P40 | enum: cycle|word|whole | cycle",
-      "ttsEnabled | Czytanie na głos włączone | P41 | boolean | true",
-      "ttsInterrupt | Nowy komunikat przerywa aktualnie czytany | P41 | boolean | false",
-      "ttsPitch | Wysokość | P41 | number 0..2 | 1",
-      "ttsRate | Tempo | P41 | number 0.5..2 | 1",
-      "ttsVoice | Głos | P41 | enum:  | \"\"",
-      "ttsVolume | Głośność | P41 | number 0..1 | 1"
+      "tabCompletionHint | Podpowiedź uzupełniania (Tab) za kursorem | P42 | boolean | true",
+      "tabCompletionMode | Uzupełnianie klawiszem Tab | P42 | enum: cycle|word|whole | cycle",
+      "ttsEnabled | Czytanie na głos włączone | P43 | boolean | true",
+      "ttsInterrupt | Nowy komunikat przerywa aktualnie czytany | P43 | boolean | false",
+      "ttsPitch | Wysokość | P43 | number 0..2 | 1",
+      "ttsRate | Tempo | P43 | number 0.5..2 | 1",
+      "ttsVoice | Głos | P43 | enum:  | \"\"",
+      "ttsVolume | Głośność | P43 | number 0..1 | 1"
     ],
     "commands": [
       "' ('<tekst>) — Mow w ustawionym jezyku (pojedynczy apostrof przed tekstem)",
@@ -3802,12 +3804,15 @@
       "type": "string",
       "optional": false,
       "default": "",
-      "control": "unknown",
-      "exposedInUi": false,
+      "control": "checkbox",
+      "exposedInUi": true,
       "sources": [
         "src/shared/uiSettingsTypes.ts",
-        "src/shared/settingsDefaults.ts"
-      ]
+        "src/shared/settingsDefaults.ts",
+        "src/web/uiSettings/FunctionalBindSettings.tsx"
+      ],
+      "label": "Akcja w zwykłym kolorze tekstu gry",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Bind funkcyjny"
     },
     {
       "path": "ui.renderSettings.functionalBindColor",
@@ -3817,12 +3822,15 @@
       "type": "string",
       "optional": false,
       "default": "#00ffaf",
-      "control": "unknown",
-      "exposedInUi": false,
+      "control": "color",
+      "exposedInUi": true,
       "sources": [
         "src/shared/uiSettingsTypes.ts",
-        "src/shared/settingsDefaults.ts"
-      ]
+        "src/shared/settingsDefaults.ts",
+        "src/web/uiSettings/FunctionalBindSettings.tsx"
+      ],
+      "label": "Kolor tekstu",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Bind funkcyjny"
     },
     {
       "path": "ui.renderSettings.functionalBindInFooter",
@@ -3832,12 +3840,15 @@
       "type": "boolean",
       "optional": false,
       "default": false,
-      "control": "unknown",
-      "exposedInUi": false,
+      "control": "checkbox",
+      "exposedInUi": true,
       "sources": [
         "src/shared/uiSettingsTypes.ts",
-        "src/shared/settingsDefaults.ts"
-      ]
+        "src/shared/settingsDefaults.ts",
+        "src/web/uiSettings/FunctionalBindSettings.tsx"
+      ],
+      "label": "Pokazuj aktywny bind w stopce",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Bind funkcyjny"
     },
     {
       "path": "ui.renderSettings.functionalBindKeyColor",
@@ -3847,12 +3858,15 @@
       "type": "string",
       "optional": false,
       "default": "#ffd787",
-      "control": "unknown",
-      "exposedInUi": false,
+      "control": "color",
+      "exposedInUi": true,
       "sources": [
         "src/shared/uiSettingsTypes.ts",
-        "src/shared/settingsDefaults.ts"
-      ]
+        "src/shared/settingsDefaults.ts",
+        "src/web/uiSettings/FunctionalBindSettings.tsx"
+      ],
+      "label": "Kolor klawisza",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Bind funkcyjny"
     },
     {
       "path": "ui.renderSettings.functionalBindOutput",
@@ -3862,23 +3876,29 @@
       "type": "'full' | 'compact' | 'hidden'",
       "optional": false,
       "default": "full",
-      "control": "unknown",
-      "exposedInUi": false,
+      "control": "select",
+      "exposedInUi": true,
       "sources": [
         "src/shared/uiSettingsTypes.ts",
-        "src/shared/settingsDefaults.ts"
+        "src/shared/settingsDefaults.ts",
+        "src/web/uiSettings/FunctionalBindSettings.tsx"
       ],
       "options": [
         {
-          "value": "full"
+          "value": "full",
+          "label": "Pełny — z odstępami (domyślny)"
         },
         {
-          "value": "compact"
+          "value": "compact",
+          "label": "Kompaktowy — jedna linia"
         },
         {
-          "value": "hidden"
+          "value": "hidden",
+          "label": "Ukryty"
         }
-      ]
+      ],
+      "label": "Komunikat w oknie gry",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Bind funkcyjny"
     },
     {
       "path": "ui.renderSettings.functionalBindTemplate",
@@ -3888,12 +3908,15 @@
       "type": "string",
       "optional": false,
       "default": "bind {key}: {action}",
-      "control": "unknown",
-      "exposedInUi": false,
+      "control": "text",
+      "exposedInUi": true,
       "sources": [
         "src/shared/uiSettingsTypes.ts",
-        "src/shared/settingsDefaults.ts"
-      ]
+        "src/shared/settingsDefaults.ts",
+        "src/web/uiSettings/FunctionalBindSettings.tsx"
+      ],
+      "label": "Format komunikatu",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Bind funkcyjny"
     },
     {
       "path": "ui.renderSettings.highlightMessageBlocks",
@@ -4344,12 +4367,15 @@
       "type": "number",
       "optional": false,
       "default": 0.775,
-      "control": "unknown",
-      "exposedInUi": false,
+      "control": "number",
+      "exposedInUi": true,
       "sources": [
         "src/shared/uiSettingsTypes.ts",
-        "src/shared/settingsDefaults.ts"
-      ]
+        "src/shared/settingsDefaults.ts",
+        "src/web/uiSettings/sections/AppearanceSection.tsx"
+      ],
+      "label": "Rozmiar w oknie wyjścia (px)",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Wygląd → Czcionka"
     },
     {
       "path": "ui.uiSettings.footerBindsScale",
@@ -4504,12 +4530,16 @@
       "type": "FooterPresetId",
       "optional": true,
       "default": null,
-      "control": "unknown",
+      "control": "complex",
       "exposedInUi": false,
       "sources": [
         "src/shared/uiSettingsTypes.ts",
-        "src/web/defaultUiSettings.ts"
-      ]
+        "src/web/defaultUiSettings.ts",
+        "scripts/assistant-kb-overrides.json"
+      ],
+      "label": "Układ, z którego powstał własny",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Układ stopki",
+      "note": "Ustawiany sam przez edytor: preset (stock, forge, arkadia), z ktorego zbudowano footerCustomLayout; przycisk Przywroc wraca do niego."
     },
     {
       "path": "ui.uiSettings.footerCustomLayout",
@@ -4519,12 +4549,16 @@
       "type": "FooterLayout",
       "optional": true,
       "default": null,
-      "control": "unknown",
+      "control": "complex",
       "exposedInUi": false,
       "sources": [
         "src/shared/uiSettingsTypes.ts",
-        "src/web/defaultUiSettings.ts"
-      ]
+        "src/web/defaultUiSettings.ts",
+        "scripts/assistant-kb-overrides.json"
+      ],
+      "label": "Własny układ stopki",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Układ stopki",
+      "note": "Budowany w edytorze ukladu (przyciski Dostosuj... / Edytuj uklad...). Uzywany, gdy footerLayout to custom. Nie proponuj zmian recznie - odeslij gracza do edytora."
     },
     {
       "path": "ui.uiSettings.footerLayout",
@@ -4534,12 +4568,16 @@
       "type": "FooterLayoutChoice",
       "optional": true,
       "default": null,
-      "control": "unknown",
+      "control": "select",
       "exposedInUi": false,
       "sources": [
         "src/shared/uiSettingsTypes.ts",
-        "src/web/defaultUiSettings.ts"
-      ]
+        "src/web/defaultUiSettings.ts",
+        "scripts/assistant-kb-overrides.json"
+      ],
+      "label": "Układ",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Układ stopki",
+      "note": "Uklad stopki dla obu interfejsow: stock (Klasyczny), forge (Pietrowy), arkadia (Mudlet) albo custom (Wlasny, rysuje footerCustomLayout). Nieustawiony: Klasyczny, a w motywie Kuznia Pietrowy. Telefon zawsze ma uklad klasyczny."
     },
     {
       "path": "ui.uiSettings.footerLayoutTweaks",
@@ -4549,12 +4587,16 @@
       "type": "FooterLayoutTweakSet",
       "optional": true,
       "default": null,
-      "control": "unknown",
+      "control": "complex",
       "exposedInUi": false,
       "sources": [
         "src/shared/uiSettingsTypes.ts",
-        "src/web/defaultUiSettings.ts"
-      ]
+        "src/web/defaultUiSettings.ts",
+        "scripts/assistant-kb-overrides.json"
+      ],
+      "label": "Dostosowania układów stopki",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Układ stopki",
+      "note": "Osobne poprawki dla kazdego presetu (np. Plakietki), widoczne pod polem Uklad dla wybranego presetu. Zmiana presetu i powrot nic nie traci."
     },
     {
       "path": "ui.uiSettings.footerMode",
@@ -4837,12 +4879,15 @@
       "type": "number",
       "optional": false,
       "default": 0.6,
-      "control": "unknown",
-      "exposedInUi": false,
+      "control": "number",
+      "exposedInUi": true,
       "sources": [
         "src/shared/uiSettingsTypes.ts",
-        "src/web/defaultUiSettings.ts"
-      ]
+        "src/web/defaultUiSettings.ts",
+        "src/web/uiSettings/sections/AppearanceSection.tsx"
+      ],
+      "label": "Rozmiar na liście obiektów (px)",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Wygląd → Czcionka"
     },
     {
       "path": "ui.uiSettings.outputMaxElements",
@@ -7942,32 +7987,19 @@
       "content": "# llm.txt — Arkadia Web Client\n\nGuide for AI agents helping a user of this page — a browser-based client for\nthe Arkadia MUD. The UI is in Polish; labels below are quoted verbatim so you\ncan point the user at the right control.\n\nAll menus below are reached from the hamburger menu (`☰`) next to the command\ninput at the bottom of the page. Its entries are grouped under `Gra`,\n`Ustawienia`, `Narzędzia` and `Wtyczki`; the field at the top of the menu\nfilters them.\n\n---\n\n## Create an alias\nPath: `☰` → `Aliasy` → `Dodaj alias`.\n\n- `Wzorzec (pattern)` is a **regular expression** matched against what the user\n  types in the input box.\n- Aliases are almost always anchored with `^` so they fire only when the line\n  **starts** with that word. A typical pattern looks like `^zab (.+)$` — `^`\n  means \"start of line\", then literal text, then a capture group.\n- In the `Komenda` field use `$1`, `$2`, ... to reference capture groups.\n- Object shortcuts `@1`, `@A`, `@@` expand to object IDs from the object list —\n  useful in combat aliases.\n- `$i` enables range expansion: pattern `^kok (.+)$` with command\n  `rozerwij $i. kokon` lets the user type `kok 1-7` to run the command seven\n  times.\n- Each new line in the command runs as a separate command (same as `;`).\n- Per-character overrides are available in the same modal.\n\n## Create a trigger\nPath: `☰` → `Triggery` → `Dodaj trigger`.\n\nTwo modes, chosen by radio button:\n- `Wzorzec tekstu` — matches **game output** against a regex. Same regex\n  semantics as aliases. Triggers often match mid-line, so leave `^` off unless\n  the match really must be at line start. Flags (`i` case-insensitive, `g`\n  global, `m` multiline) are set via the `Flagi` picker.\n- `Zdarzenie` — fires on a client event instead of a text pattern.\n\nEach trigger runs one or more `akcje`: color/replace/wrap the match, play a\nsound, send a command, mute/unmute, etc. Plugin-provided actions appear grouped\nby plugin.\n\n## Bind a key\nPath: `☰` → `Klawisze`.\n\nA drawing of the keyboard with tabs for the modifier layers (`Bez\nmodyfikatora`, `Ctrl`, `Alt`/`⌥`, `Shift`, `Ctrl+Alt`); below it the bindings\ngrouped into `Podstawowe`, `Wrogowie`, `Tymczasowe`, `Kierunki` and `Własne`.\nClick a key on the drawing, or a key next to a binding in the list and press the\nnew one. **Every change saves immediately — there is no `Zapisz` here.** Each\nbinding has one `Gdzie działa` setting (in the client / through the helper /\neverywhere).\n\n## Save a location shortcut or a note\nPath: `☰` → `Miejsca`.\n\nOne window for both: a place is a map room with an optional shortcut name and an\noptional note. `Tutaj` adds the room the user is standing in; the shortcut field\nshows the matching `/prowadz nazwa` command; the note saves itself. The search\nbox finds rooms by name, area or number, so a place can be added without walking\nthere. Commands: `/dodaj_skrot [id] nazwa` (no id = current room), `/pokaz_skroty`, `/usun_skrot nazwa`,\n`/prowadz nazwa`, `/note`.\n\n## Change character settings (combat, herbs, collecting, language, ...)\nPath: `☰` → `Ustawienia` → group `Postać` in the sidebar.\n\nPer-character — stored under the currently logged-in character. The form is\ndisabled until a character is selected. Covers: compass/exits, containers,\ncoin/item collecting (with per-enemy overrides), combat commands, herbs,\n`/dob` + `/op` slots (plus what a click / long press on the footer weapon chip\nsends), default language and language-switch aliases.\n\n## Change interface / appearance / sound / buttons\nPath: `☰` → `Ustawienia` → group `Interfejs` in the sidebar.\n\n`Ustawienia` is one window for everything; it reopens where the user left it\n(same page, unsaved edits kept until `Zapisz` or `Odrzuć zmiany`).\n\nGlobal — shared across characters on this device. Pages: `Wygląd` (fonts,\ncolors, theme), `Okna` (`Menedżer Okien`, output window), `Komendy`,\n`Przyciski` (on-screen buttons), `Przyciski mobilne` (mobile button grid),\n`Menu kołowe` (mobile radial menu), `Stopka`, `Mapa`, `Dźwięk i powiadomienia`,\n`Inne`. One `Zapisz` saves every page.\n\nThe third group, `Dane`, holds `Synchronizacja`, `Kopia zapasowa` (settings\nexport and import to a file), `Urządzenia` and `Import z innych klientów`. These\nact at once, outside `Zapisz`.\n\n## Other menu entries worth knowing\n- `Nagrania` — session recordings\n- `Baza postaci` — known-players browser; each entry can carry a note (`Notatka`), and ticking `Pokaż notatkę przy spotkaniu` prints it under the room line listing who is present\n- `Odbiorcy paczek` — package receivers\n- `Kod QR lokacji` — QR code for the current room\n- `Skrypty (wtyczki)` — user scripts / plugins\n- `Źródła danych` — downloaded game data\n- `Helper` — the companion app (global hotkeys, window management)\n- `Szukaj w tekście` — search the game output (also `Ctrl+F`); `Ctrl+R` in the command line searches the command history\n- `Logi` — session logs\n- `Dokumentacja` — built-in docs\n\n---\n\n## Layout Manager (`Menedżer Okien`)\n\nDockable/floating panels for map, conditions, chat and combat popups arranged\naround the output area instead of overlaying it.\n\n**It is on by default on desktop** (first visit from a big screen), together\nwith the on-screen buttons turned off, so there is usually nothing to suggest.\nIt stays off for users who declined the old offer, for mobile-like viewports,\nand for anyone who switched it off afterwards.\n\nIf the user is on a desktop and does not have it on, it is worth offering:\n1. `☰` → `Ustawienia`, group `Interfejs`.\n2. Page `Okna`, section `Menedżer Okien` → tick `Włącz menedżer okien`.\n   Optionally tick `Kondycje` to also dock the condition list.\n3. Page `Przyciski mobilne` → **untick** `Pokaż przyciski na ekranie`\n   (they only help on touch devices).\n4. Press `Zapisz`."
     }
   ],
-  "gaps": [
-    "ui.renderSettings.functionalBindActionColor: no Polish label recovered — add one to scripts/assistant-kb-overrides.json",
-    "ui.renderSettings.functionalBindColor: no Polish label recovered — add one to scripts/assistant-kb-overrides.json",
-    "ui.renderSettings.functionalBindInFooter: no Polish label recovered — add one to scripts/assistant-kb-overrides.json",
-    "ui.renderSettings.functionalBindKeyColor: no Polish label recovered — add one to scripts/assistant-kb-overrides.json",
-    "ui.renderSettings.functionalBindOutput: no Polish label recovered — add one to scripts/assistant-kb-overrides.json",
-    "ui.renderSettings.functionalBindTemplate: no Polish label recovered — add one to scripts/assistant-kb-overrides.json",
-    "ui.uiSettings.contentFontSize: no Polish label recovered — add one to scripts/assistant-kb-overrides.json",
-    "ui.uiSettings.footerCustomBase: no Polish label recovered — add one to scripts/assistant-kb-overrides.json",
-    "ui.uiSettings.footerCustomLayout: no Polish label recovered — add one to scripts/assistant-kb-overrides.json",
-    "ui.uiSettings.footerLayout: no Polish label recovered — add one to scripts/assistant-kb-overrides.json",
-    "ui.uiSettings.footerLayoutTweaks: no Polish label recovered — add one to scripts/assistant-kb-overrides.json",
-    "ui.uiSettings.objectsFontSize: no Polish label recovered — add one to scripts/assistant-kb-overrides.json"
-  ],
-  "version": "18d20cc381bcc009",
-  "generatedAt": "2026-11-10T11:27:16.989Z",
+  "gaps": [],
+  "version": "22cf4953631f467d",
+  "generatedAt": "2026-11-10T11:30:00.564Z",
   "stats": {
     "settings": 171,
-    "settingsWithLabels": 159,
+    "settingsWithLabels": 171,
     "commands": 249,
     "commandsWithDescriptions": 244,
     "events": 35,
     "docs": 16,
-    "leanChars": 54664,
-    "leanTokens": 13666,
-    "fatChars": 345727,
-    "fatTokens": 86432
+    "leanChars": 55067,
+    "leanTokens": 13767,
+    "fatChars": 347372,
+    "fatTokens": 86843
   }
 }

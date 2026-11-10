@@ -384,6 +384,8 @@ const CONTROL_TAGS: Record<string, SettingControl> = {
     NumberField: 'number',
     RangeField: 'range',
     ColorField: 'color',
+    // AppearanceSection's NumberField in px over a rem value.
+    PxSizeField: 'number',
     'Form.Check': 'checkbox',
     'Form.Select': 'select',
     'Form.Range': 'range',
@@ -809,7 +811,7 @@ const SETTINGS_PANELS: PanelSpec[] = [
     { category: 'character-magics', files: ['src/web/options/MagikiSettings.tsx'] },
     { category: 'ui-appearance', files: ['src/web/uiSettings/sections/AppearanceSection.tsx'] },
     { category: 'ui-windows', files: ['src/web/uiSettings/sections/WindowsSections.tsx'] },
-    { category: 'ui-commands', files: ['src/web/uiSettings/sections/CommandsSection.tsx'] },
+    { category: 'ui-commands', files: ['src/web/uiSettings/sections/CommandsSection.tsx', 'src/web/uiSettings/FunctionalBindSettings.tsx'] },
     { category: 'ui-footer', files: ['src/web/uiSettings/sections/FooterSections.tsx'] },
     { category: 'ui-map', files: ['src/web/uiSettings/sections/MapSections.tsx'] },
     {

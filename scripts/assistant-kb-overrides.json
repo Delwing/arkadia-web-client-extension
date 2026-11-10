@@ -248,6 +248,30 @@
       "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Powiadomienia systemowe",
       "control": "checkbox",
       "note": "Domyslnie wylaczone, czyli powiadomienia na sparowane urzadzenia sa wysylane niezaleznie od tego, czy karta klienta jest aktywna. Wlaczenie wstrzymuje je, gdy gracz patrzy na klienta."
+    },
+    "ui.uiSettings.footerLayout": {
+      "label": "Układ",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Układ stopki",
+      "control": "select",
+      "note": "Uklad stopki dla obu interfejsow: stock (Klasyczny), forge (Pietrowy), arkadia (Mudlet) albo custom (Wlasny, rysuje footerCustomLayout). Nieustawiony: Klasyczny, a w motywie Kuznia Pietrowy. Telefon zawsze ma uklad klasyczny."
+    },
+    "ui.uiSettings.footerCustomLayout": {
+      "label": "Własny układ stopki",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Układ stopki",
+      "control": "complex",
+      "note": "Budowany w edytorze ukladu (przyciski Dostosuj... / Edytuj uklad...). Uzywany, gdy footerLayout to custom. Nie proponuj zmian recznie - odeslij gracza do edytora."
+    },
+    "ui.uiSettings.footerCustomBase": {
+      "label": "Układ, z którego powstał własny",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Układ stopki",
+      "control": "complex",
+      "note": "Ustawiany sam przez edytor: preset (stock, forge, arkadia), z ktorego zbudowano footerCustomLayout; przycisk Przywroc wraca do niego."
+    },
+    "ui.uiSettings.footerLayoutTweaks": {
+      "label": "Dostosowania układów stopki",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Układ stopki",
+      "control": "complex",
+      "note": "Osobne poprawki dla kazdego presetu (np. Plakietki), widoczne pod polem Uklad dla wybranego presetu. Zmiana presetu i powrot nic nie traci."
     }
   },
   "commands": {
