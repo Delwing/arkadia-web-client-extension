@@ -2,6 +2,14 @@ import type { ContextMenuTarget } from './types'
 
 let contextMenuTarget: ContextMenuTarget | null = null
 
+/** Entries for files only: open to the side, compare, history. */
+function setOpenSideVisible(contextMenu: HTMLElement, visible: boolean) {
+  for (const action of ['open-side', 'compare', 'history']) {
+    const item = contextMenu.querySelector(`[data-action="${action}"]`) as HTMLElement | null
+    if (item) item.style.display = visible ? 'block' : 'none'
+  }
+}
+
 export function showContextMenu(x: number, y: number, filePath: string, fileName: string) {
   const contextMenu = document.getElementById('context-menu')
   if (!contextMenu) {
@@ -10,6 +18,7 @@ export function showContextMenu(x: number, y: number, filePath: string, fileName
   }
 
   contextMenuTarget = { path: filePath, name: fileName, isFolder: false }
+  setOpenSideVisible(contextMenu, true)
 
   // Show all menu items for file context menu
   const renameItem = contextMenu.querySelector('[data-action="rename"]') as HTMLElement
@@ -40,6 +49,7 @@ export function showContextMenu(x: number, y: number, filePath: string, fileName
 export function showFolderContextMenu(x: number, y: number, folderPath: string) {
   const contextMenu = document.getElementById('context-menu')!
   contextMenuTarget = { path: folderPath, name: folderPath, isFolder: true }
+  setOpenSideVisible(contextMenu, false)
 
   // Show all menu items for folder context menu
   const renameItem = contextMenu.querySelector('[data-action="rename"]') as HTMLElement
@@ -70,6 +80,7 @@ export function showFolderContextMenu(x: number, y: number, folderPath: string) 
 export function showRootContextMenu(x: number, y: number) {
   const contextMenu = document.getElementById('context-menu')!
   contextMenuTarget = { path: '', name: '', isFolder: true }
+  setOpenSideVisible(contextMenu, false)
 
   // Hide rename and delete for root/empty space context menu
   const renameItem = contextMenu.querySelector('[data-action="rename"]') as HTMLElement

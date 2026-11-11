@@ -99,12 +99,18 @@ export function getSavedTheme(): string {
 export interface EditorPrefs {
   fontSize: number
   minimap: boolean
+  /** A single click opens a file in a preview tab that the next one replaces. */
+  previewTabs: boolean
+  /** Saved versions kept per file in the local history; 0 keeps none. */
+  historyVersions: number
+  /** Versions older than this many days are dropped from the local history. */
+  historyDays: number
 }
 
 const PREFS_KEY = 'editor-prefs'
-const DEFAULT_PREFS: EditorPrefs = { fontSize: 14, minimap: true }
+const DEFAULT_PREFS: EditorPrefs = { fontSize: 14, minimap: true, previewTabs: true, historyVersions: 50, historyDays: 30 }
 
-/** Font size and minimap, set in the settings popover and kept across sessions. */
+/** The editor's settings from the settings popover, kept across sessions. */
 export function getEditorPrefs(): EditorPrefs {
   try {
     return { ...DEFAULT_PREFS, ...JSON.parse(localStorage.getItem(PREFS_KEY) || '{}') }

@@ -30,7 +30,7 @@ export function renderFilePickerList(filter: string) {
     item.appendChild(text)
 
     item.addEventListener('click', () => {
-      switchToFile(filePath)
+      switchToFile(filePath, undefined, 'active', true)
       closeFilePicker()
     })
 

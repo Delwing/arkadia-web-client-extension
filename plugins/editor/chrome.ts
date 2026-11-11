@@ -1,6 +1,7 @@
 import * as monaco from 'monaco-editor'
 import { createPopover } from './popover'
 import { getEditorPrefs, saveEditorPrefs } from './monaco/themes'
+import { pluginMarkers } from './problemsPanel'
 
 /**
  * The editor's chrome around Monaco: the header (open plugin, breadcrumb,
@@ -85,10 +86,13 @@ export function setSaveState(saveState: SaveState, modifiedCount = 0) {
 
 // ── Status bar ──────────────────────────────────────────────────────────
 
+/**
+ * Cursor, file language and problem counts for the active editor. Returns
+ * `refresh`, and `watch` to follow another editor's cursor (a new group).
+ */
 export function setupStatusBar(
-  editor: monaco.editor.IStandaloneCodeEditor,
-  getPluginId: () => string | null,
-  openLocation: (filePath: string, position: monaco.IPosition) => void
+  getEditor: () => monaco.editor.ICodeEditor | null,
+  getPluginId: () => string | null
 ) {
   const cursor = document.getElementById('cursor-position')!
   const language = document.getElementById('file-language')!
@@ -97,24 +101,15 @@ export function setupStatusBar(
   const warnings = document.getElementById('problems-warnings')!
 
   const updateCursor = () => {
-    const position = editor.getPosition()
-    const model = editor.getModel()
-    cursor.textContent = position && getPluginId() ? `Ln ${position.lineNumber}, Col ${position.column}` : ''
+    const editor = getEditor()
+    const position = editor?.getPosition()
+    const model = editor?.getModel()
+    cursor.textContent = position && model && getPluginId() ? `Ln ${position.lineNumber}, Col ${position.column}` : ''
     language.textContent = model && getPluginId() ? languageName(model.getLanguageId()) : ''
   }
 
-  // Markers of the open plugin's files only (models live at file:///<pluginId>/<path>).
-  const pluginMarkers = () => {
-    const pluginId = getPluginId()
-    if (!pluginId) return []
-    const prefix = `/${pluginId}/`
-    return monaco.editor.getModelMarkers({}).filter(marker =>
-      marker.resource.scheme === 'file' && marker.resource.path.startsWith(prefix)
-    )
-  }
-
   const updateProblems = () => {
-    const markers = pluginMarkers()
+    const markers = pluginMarkers(getPluginId())
     const errorCount = markers.filter(m => m.severity === monaco.MarkerSeverity.Error).length
     const warningCount = markers.filter(m => m.severity === monaco.MarkerSeverity.Warning).length
     errors.textContent = String(errorCount)
@@ -124,25 +119,21 @@ export function setupStatusBar(
     problemsBtn.classList.toggle('has-warnings', errorCount === 0 && warningCount > 0)
   }
 
-  problemsBtn.addEventListener('click', () => {
-    const markers = pluginMarkers().sort((a, b) => a.severity === b.severity ? 0 : b.severity - a.severity)
-    const first = markers[0]
-    if (!first) return
-    const pluginId = getPluginId()!
-    const filePath = first.resource.path.slice(pluginId.length + 2)
-    openLocation(filePath, { lineNumber: first.startLineNumber, column: first.startColumn })
-  })
-
-  editor.onDidChangeCursorPosition(updateCursor)
-  editor.onDidChangeModel(() => {
-    updateCursor()
-    updateProblems()
-  })
   monaco.editor.onDidChangeMarkers(updateProblems)
 
-  return () => {
-    updateCursor()
-    updateProblems()
+  return {
+    refresh: () => {
+      updateCursor()
+      updateProblems()
+    },
+    watch: (editor: monaco.editor.ICodeEditor) => {
+      editor.onDidChangeCursorPosition(() => {
+        if (editor === getEditor()) updateCursor()
+      })
+      editor.onDidChangeModel(() => {
+        if (editor === getEditor()) updateCursor()
+      })
+    },
   }
 }
 
@@ -152,9 +143,12 @@ const FONT_MIN = 10
 const FONT_MAX = 24
 
 export function setupSettings(
-  getEditors: () => monaco.editor.IStandaloneCodeEditor[],
+  /** The code editors (every group's), and the others (the JS preview) that only follow the font size. */
+  getEditors: () => { code: monaco.editor.IStandaloneCodeEditor[]; other: monaco.editor.IStandaloneCodeEditor[] },
   onThemeChange: (theme: string) => void,
-  onConfigureIde: () => void
+  onConfigureIde: () => void,
+  /** The local history limits changed (already saved). */
+  onHistoryLimitsChange: () => void
 ) {
   const popover = createPopover(
     document.getElementById('settings-btn')!,
@@ -167,13 +161,20 @@ export function setupSettings(
 
   const fontValue = document.getElementById('font-size-value')!
   const minimap = document.getElementById('minimap-toggle') as HTMLInputElement
+  const previewTabs = document.getElementById('preview-tabs-toggle') as HTMLInputElement
+  const historyVersions = document.getElementById('history-versions-input') as HTMLInputElement
+  const historyDays = document.getElementById('history-days-input') as HTMLInputElement
 
   const apply = () => {
     const prefs = getEditorPrefs()
     fontValue.textContent = String(prefs.fontSize)
     minimap.checked = prefs.minimap
-    getEditors().forEach(editor => editor.updateOptions({ fontSize: prefs.fontSize }))
-    getEditors()[0]?.updateOptions({ minimap: { enabled: prefs.minimap } })
+    previewTabs.checked = prefs.previewTabs
+    historyVersions.value = String(prefs.historyVersions)
+    historyDays.value = String(prefs.historyDays)
+    const { code, other } = getEditors()
+    ;[...code, ...other].forEach(editor => editor.updateOptions({ fontSize: prefs.fontSize }))
+    code.forEach(editor => editor.updateOptions({ minimap: { enabled: prefs.minimap } }))
   }
 
   const stepFont = (delta: number) => {
@@ -188,6 +189,23 @@ export function setupSettings(
     saveEditorPrefs({ minimap: minimap.checked })
     apply()
   })
+  previewTabs.addEventListener('change', () => saveEditorPrefs({ previewTabs: previewTabs.checked }))
+
+  // Whole numbers within the inputs' bounds; anything else puts the old value back.
+  const historyInput = (input: HTMLInputElement, key: 'historyVersions' | 'historyDays') => {
+    input.addEventListener('change', () => {
+      const value = Math.round(Number(input.value))
+      if (input.value.trim() === '' || !Number.isFinite(value)) {
+        apply()
+        return
+      }
+      saveEditorPrefs({ [key]: Math.min(Number(input.max), Math.max(Number(input.min), value)) })
+      apply()
+      onHistoryLimitsChange()
+    })
+  }
+  historyInput(historyVersions, 'historyVersions')
+  historyInput(historyDays, 'historyDays')
 
   document.getElementById('settings-ide-btn')!.addEventListener('click', () => {
     popover.close()

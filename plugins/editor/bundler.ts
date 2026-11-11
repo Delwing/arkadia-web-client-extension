@@ -1,4 +1,6 @@
 import * as esbuild from 'esbuild-wasm'
+// Served with the editor, so saving works without reaching a CDN
+import esbuildWasmUrl from 'esbuild-wasm/esbuild.wasm?url'
 import type { PluginFile } from '../../src/client/utils/pluginEditorStorage'
 import type { StatusType } from './types'
 import { PLUGIN_UI_MODULE_FILTER, buildPluginUiShim, type PluginUiModule } from '../../src/shared/pluginUiGlobal'
@@ -9,7 +11,7 @@ export async function initEsbuild(updateStatus: (message: string, type: StatusTy
   if (esbuildInitialized) return
   try {
     await esbuild.initialize({
-      wasmURL: `https://unpkg.com/esbuild-wasm@${esbuild.version}/esbuild.wasm`,
+      wasmURL: esbuildWasmUrl,
     })
     esbuildInitialized = true
     updateStatus('esbuild initialized', 'success')

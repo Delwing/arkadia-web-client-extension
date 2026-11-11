@@ -4,14 +4,17 @@ import { getLanguageFromPath } from '@client/utils/pluginEditorStorage.ts'
 import type { StatusType } from './types'
 import { confirmDialog } from './dialogs'
 import { registerPluginFileLib, unregisterPluginFileLib } from './monaco/typings'
+import { validEntryPoint } from './entryPoint'
 
+/**
+ * Delete a file after asking. Its open tabs close when the tree redraws; the
+ * entry point moves to another file when it was this one.
+ */
 export async function deleteFile(
   filePath: string,
   plugin: EditorPluginData,
   editorModels: Map<string, monaco.editor.ITextModel>,
-  currentFilePath: string | null,
-  updateStatus: (message: string, type: StatusType) => void,
-  switchToFile: (path: string) => void
+  updateStatus: (message: string, type: StatusType) => void
 ): Promise<boolean> {
   const fileCount = Object.keys(plugin.files).length
   if (fileCount <= 1) {
@@ -31,29 +34,19 @@ export async function deleteFile(
     editorModels.delete(filePath)
   }
 
-  // Switch to another file if this was the current file
-  if (currentFilePath === filePath) {
-    const remainingFiles = Object.keys(plugin.files)
-    if (remainingFiles.length > 0) {
-      switchToFile(remainingFiles[0])
-      if (!plugin.entryPoint || plugin.entryPoint === filePath) {
-        plugin.entryPoint = remainingFiles[0]
-      }
-    }
-  }
+  plugin.entryPoint = validEntryPoint(plugin.entryPoint, plugin.files) ?? plugin.entryPoint
 
   updateStatus(`Deleted: ${filePath}`, 'success')
   return true
 }
 
+/** Delete a folder and its files after asking; see deleteFile. */
 export async function deleteFolder(
   folderPath: string,
   plugin: EditorPluginData,
   editorModels: Map<string, monaco.editor.ITextModel>,
   modifiedFiles: Set<string>,
-  currentFilePath: string | null,
-  updateStatus: (message: string, type: StatusType) => void,
-  switchToFile: (path: string) => void
+  updateStatus: (message: string, type: StatusType) => void
 ): Promise<boolean> {
   // Find all files in this folder
   const filesInFolder = Object.keys(plugin.files).filter(filePath =>
@@ -91,16 +84,7 @@ export async function deleteFolder(
     )
   }
 
-  // Switch to another file if current file was deleted
-  if (currentFilePath && filesInFolder.includes(currentFilePath)) {
-    const remainingFilesList = Object.keys(plugin.files)
-    if (remainingFilesList.length > 0) {
-      switchToFile(remainingFilesList[0])
-      if (!plugin.entryPoint || filesInFolder.includes(plugin.entryPoint)) {
-        plugin.entryPoint = remainingFilesList[0]
-      }
-    }
-  }
+  plugin.entryPoint = validEntryPoint(plugin.entryPoint, plugin.files) ?? plugin.entryPoint
 
   updateStatus(`Deleted folder: ${folderPath} (${filesInFolder.length} files)`, 'success')
   return true

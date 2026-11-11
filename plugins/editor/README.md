@@ -10,6 +10,12 @@ A standalone Monaco-based code editor for creating and editing Arkadia plugins w
 - **Separate Storage**: Plugins edited in the editor are stored in a separate IndexedDB database (`ArkadiaPluginEditorDB`)
 - **Auto-sync**: Compiled JavaScript is automatically synced to the main plugin storage for loading by the game client
 - **Dual-file Storage**: TypeScript source is preserved for editing, while compiled JavaScript is used for execution
+- **Preview tabs**: A single click in the file tree (or a search result, a problem, Ctrl+P, a jump to a definition) opens the file in an italic preview tab that the next one replaces; editing it or double-clicking keeps it open. Can be turned off in the settings
+- **Local history and compare**: Every save keeps a version of each file that changed, in this browser's IndexedDB, so it survives reloads. "Compare with Saved" and "File History" (tab menu, file tree menu, editor right-click menu) show a diff against the saved version or an older one; the current side stays editable, and Restore puts an old version back as one edit that Ctrl+Z undoes. The settings set how many versions per file and how many days to keep
+- **Tabs and split view**: Files open as tabs; split the editor in two (the button at the end of the tab strip, Ctrl+\\, or "Open to the Side" in the file tree's menu) and drag tabs to reorder them or move them between the two groups. Middle-click closes a tab; right-click has Close Others, Close to the Right and Move. Open tabs are remembered per plugin.
+- **Problems panel**: Click the error/warning counts in the status bar (or Ctrl+Shift+M) to list every error and warning in the plugin, grouped by file; click one to jump to it. Errors from bundling on save (a missing import, a syntax error) are listed there too and marked in the file; editing the line clears them
+- **Search across files**: Ctrl+Shift+F (or the Search tab above the file tree) searches every file of the plugin, unsaved edits included, with match case, whole word and regular expression options. Replace All changes every match after asking; Ctrl+Z in a file undoes it there
+- **Works offline from CDNs**: esbuild's wasm is served with the editor rather than fetched from unpkg
 
 ## Architecture
 
@@ -131,6 +137,12 @@ export async function destroy(): Promise<void> {
 ## Keyboard Shortcuts
 
 - **Ctrl+S / Cmd+S**: Save current plugin
+- **Ctrl+O**: Switch plugin
+- **Ctrl+P**: Go to file
+- **Ctrl+\\**: Split the editor (open the current file beside it)
+- **Ctrl+Shift+M**: Show or hide the Problems panel
+- **Ctrl+Shift+F**: Search across files (with text selected, searches for it)
+- **Ctrl+Shift+E**: Back to the file tree
 - Monaco editor includes standard shortcuts (Ctrl+F for find, etc.)
 
 ## Technical Details
