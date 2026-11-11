@@ -8,6 +8,7 @@ import type { EditorPluginData, PluginFile } from '@client/utils/pluginEditorSto
 import { getLanguageFromPath } from '@client/utils/pluginEditorStorage.ts';
 import type { FileOperation } from './types/codingAgent';
 import type { StatusType } from './types';
+import { validEntryPoint } from './entryPoint';
 
 export interface AgentFileOperationsContext {
   plugin: EditorPluginData;
@@ -196,16 +197,8 @@ function deleteFile(operation: FileOperation, context: AgentFileOperationsContex
   monaco.typescript.typescriptDefaults.addExtraLib('', uri.toString());
   monaco.typescript.javascriptDefaults.addExtraLib('', uri.toString());
 
-  // Switch to another file if this was the current file
-  if (context.currentFilePath === path) {
-    const remainingFiles = Object.keys(plugin.files);
-    if (remainingFiles.length > 0) {
-      context.switchToFile(remainingFiles[0]);
-      if (!plugin.entryPoint || plugin.entryPoint === path) {
-        plugin.entryPoint = remainingFiles[0];
-      }
-    }
-  }
+  // Its tabs close when the tree redraws; only the entry point needs a new home.
+  plugin.entryPoint = validEntryPoint(plugin.entryPoint, plugin.files) ?? plugin.entryPoint;
 
   context.renderFileTree();
   context.updateStatus(`Deleted file: ${path}`, 'success');
@@ -284,16 +277,8 @@ export function deleteDirectory(dirPath: string, context: AgentFileOperationsCon
     );
   }
 
-  // Switch to another file if current file was deleted
-  if (context.currentFilePath && filesInFolder.includes(context.currentFilePath)) {
-    const remainingFilesList = Object.keys(plugin.files);
-    if (remainingFilesList.length > 0) {
-      context.switchToFile(remainingFilesList[0]);
-      if (!plugin.entryPoint || filesInFolder.includes(plugin.entryPoint)) {
-        plugin.entryPoint = remainingFilesList[0];
-      }
-    }
-  }
+  // Their tabs close when the tree redraws; only the entry point needs a new home.
+  plugin.entryPoint = validEntryPoint(plugin.entryPoint, plugin.files) ?? plugin.entryPoint;
 
   context.renderFileTree();
   context.updateStatus(`Deleted directory: ${dirPath} (${filesInFolder.length} files)`, 'success');

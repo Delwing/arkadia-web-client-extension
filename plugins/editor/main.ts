@@ -25,7 +25,9 @@ import {
   loadPlugin,
   reloadPluginList,
   renderCurrentFileTree,
+  pluginModels,
   requestOpenPlugin,
+  revealRange,
   saveCurrentPlugin,
   sessionHooks,
   setupEditors,
@@ -35,6 +37,7 @@ import {
 } from './session'
 import * as groups from './editorGroups'
 import {setupProblemsPanel} from './problemsPanel'
+import {setupSearchPanel} from './searchPanel'
 import {setupFileTreeActions} from './fileTreeActions'
 import {
   deleteCurrentPlugin,
@@ -71,8 +74,14 @@ self.MonacoEnvironment = {
 let agentPanel: CodingAgentPanel | null = null
 let pluginSwitcher: Popover | null = null
 
-sessionHooks.followPlugin = followOpenPlugin
+let searchPanel: ReturnType<typeof setupSearchPanel> | null = null
+
+sessionHooks.followPlugin = (pluginId) => {
+  searchPanel?.reset()
+  followOpenPlugin(pluginId)
+}
 sessionHooks.pluginLoaded = (pluginId) => agentPanel?.onPluginChanged(pluginId)
+sessionHooks.contentChanged = () => searchPanel?.contentChanged()
 sessionHooks.saved = writeToLinkedFolder
 
 // The toolbar, menus and shortcuts; each panel wires its own controls.
@@ -186,6 +195,16 @@ async function init() {
       switchToFile(filePath, range)
       groups.activeEditor()?.focus()
     },
+  })
+  searchPanel = setupSearchPanel({
+    getModels: pluginModels,
+    openMatch: (filePath, range) => revealRange(filePath, range),
+    getSelection: () => {
+      const editor = groups.activeEditor()
+      const selection = editor?.getSelection()
+      return selection && !selection.isEmpty() ? editor!.getModel()?.getValueInRange(selection) ?? '' : ''
+    },
+    updateStatus,
   })
   sessionHooks.refreshStatusBar = () => {
     statusBar.refresh()

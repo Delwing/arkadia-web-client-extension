@@ -11,6 +11,7 @@ import type {EditorState} from './types'
 import {baselineOf, pathsCoveredBySave, structureChanged} from './savedBaseline'
 import {updateStatus} from './utils'
 import {bundlePlugin} from './bundler'
+import {BUNDLE_MARKER_OWNER, bundleProblems} from './bundleProblems'
 import {registerPluginFileLib, updateMonacoFileSystem} from './monaco/typings'
 import {registerAutoImportCompletion} from './monaco/autoImportCompletion'
 import {registerImportPathCompletion} from './monaco/importPathCompletion'
@@ -37,6 +38,8 @@ export const sessionHooks = {
   refreshStatusBar: (): void => {},
   /** The active editor or the file it shows changed. */
   activeEditorChanged: (): void => {},
+  /** A file's text changed (typing, the IDE, a replace). */
+  contentChanged: (): void => {},
 }
 
 // Global editor state
@@ -215,9 +218,7 @@ function drawFileTree() {
         path,
         state.currentPlugin!,
         state.editorModels,
-        state.currentFilePath,
-        updateStatus,
-        () => {} // its tabs close in renderCurrentFileTree
+        updateStatus
       )
       if (success) renderCurrentFileTree()
     },
@@ -249,6 +250,7 @@ export function createFileModel(pluginId: string, filePath: string, file: Plugin
     current.content = content
     state.modifiedFiles.add(filePath)
     renderCurrentFileTree()
+    sessionHooks.contentChanged()
 
     // Mirror to the IDE, unless this change came from it
     if (!isReceivingFromIDE) {
@@ -259,6 +261,11 @@ export function createFileModel(pluginId: string, filePath: string, file: Plugin
     }
 
     registerPluginFileLib(pluginId, filePath, current)
+
+    // A bundle error here may be fixed now; the next bundle says again if not.
+    if (monaco.editor.getModelMarkers({owner: BUNDLE_MARKER_OWNER, resource: model.uri}).length > 0) {
+      monaco.editor.setModelMarkers(model, BUNDLE_MARKER_OWNER, [])
+    }
   })
   return model
 }
@@ -398,6 +405,29 @@ export function switchToFile(filePath: string, position?: IPosition | IRange, ta
   groups.openFile(filePath, target)
   revealPosition(position)
   updateStatus(`Editing: ${filePath}`, 'normal')
+}
+
+/** Show a file with `range` selected, as when following a search result. */
+export function revealRange(filePath: string, range: IRange) {
+  switchToFile(filePath, range)
+  const editor = groups.activeEditor()
+  if (!editor || editor.getModel() !== state.editorModels.get(filePath)) return
+  editor.setSelection(range)
+  editor.revealRangeInCenterIfOutsideViewport(range)
+}
+
+/** Each file of the open plugin with its model (made if missing), in path order. */
+export function pluginModels(): Array<[string, monaco.editor.ITextModel]> {
+  const plugin = state.currentPlugin
+  const pluginId = state.currentPluginId
+  if (!plugin || !pluginId) return []
+  return Object.keys(plugin.files)
+    .filter(path => !path.startsWith('__new_file_'))
+    .sort()
+    .map(path => {
+      const model = state.editorModels.get(path)
+      return [path, model && !model.isDisposed() ? model : createFileModel(pluginId, path, plugin.files[path])]
+    })
 }
 
 /** Close a file's tabs in every group. */
@@ -550,6 +580,34 @@ export function renameFileWrapper(oldPath: string, newPath: string): boolean {
 }
 
 /**
+ * Bundle the open plugin, putting esbuild's errors on its files as markers
+ * (they show in the Problems panel) and clearing the last bundle's.
+ */
+export async function bundleOpenPlugin(files: Record<string, PluginFile>, entryPoint: string): Promise<string> {
+  const pluginId = state.currentPluginId
+  for (const model of state.editorModels.values()) {
+    if (!model.isDisposed()) monaco.editor.setModelMarkers(model, BUNDLE_MARKER_OWNER, [])
+  }
+  try {
+    return await bundlePlugin(files, entryPoint)
+  } catch (error) {
+    if (pluginId && pluginId === state.currentPluginId) {
+      const byPath = new Map<string, monaco.editor.IMarkerData[]>()
+      for (const {path, ...range} of bundleProblems(error, entryPoint, p => state.editorModels.has(p))) {
+        const markers = byPath.get(path) ?? []
+        markers.push({...range, severity: monaco.MarkerSeverity.Error, source: 'esbuild'})
+        byPath.set(path, markers)
+      }
+      for (const [path, markers] of byPath) {
+        const model = state.editorModels.get(path)
+        if (model && !model.isDisposed()) monaco.editor.setModelMarkers(model, BUNDLE_MARKER_OWNER, markers)
+      }
+    }
+    throw error
+  }
+}
+
+/**
  * Save plugin wrapper. Files already hold what the models show (each model
  * writes through on change), so nothing is read back from the editor: it may
  * be showing the read-only API typings rather than a plugin file.
@@ -564,7 +622,7 @@ export async function saveCurrentPlugin(): Promise<boolean> {
 
   setSaveState('saving')
   try {
-    const saved = await savePlugin(plugin, state.currentPluginId, bundlePlugin, updateStatus)
+    const saved = await savePlugin(plugin, state.currentPluginId, bundleOpenPlugin, updateStatus)
 
     // Another plugin was opened while this one bundled; its state is not ours to touch.
     if (state.currentPlugin !== plugin) return true

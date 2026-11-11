@@ -1,9 +1,8 @@
 /** The side panel showing the open plugin bundled to JavaScript. */
 import * as monaco from 'monaco-editor'
 import {updateStatus} from './utils'
-import {bundlePlugin} from './bundler'
 import {getEditorPrefs, getSavedTheme} from './monaco/themes'
-import {state} from './session'
+import {bundleOpenPlugin, state} from './session'
 
 let jsPreviewEditor: monaco.editor.IStandaloneCodeEditor | null = null
 let jsPreviewVisible = false
@@ -65,7 +64,7 @@ export async function refreshJsPreview() {
       filesRecord[path] = file
     }
 
-    const compiled = await bundlePlugin(filesRecord, state.currentPlugin.entryPoint)
+    const compiled = await bundleOpenPlugin(filesRecord, state.currentPlugin.entryPoint)
     jsPreviewEditor.setValue(compiled)
     updateStatus('JS preview updated', 'success')
   } catch (error) {

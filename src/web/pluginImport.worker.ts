@@ -1,5 +1,7 @@
 import JSZip from 'jszip';
 import * as esbuild from 'esbuild-wasm';
+// Served with the app, so importing works without reaching a CDN
+import esbuildWasmUrl from 'esbuild-wasm/esbuild.wasm?url';
 import type {
     PluginFile,
     PluginMetadata,
@@ -13,7 +15,7 @@ let esbuildInitialized = false;
 async function initEsbuild(): Promise<void> {
     if (esbuildInitialized) return;
     await esbuild.initialize({
-        wasmURL: `https://unpkg.com/esbuild-wasm@${esbuild.version}/esbuild.wasm`,
+        wasmURL: esbuildWasmUrl,
     });
     esbuildInitialized = true;
 }

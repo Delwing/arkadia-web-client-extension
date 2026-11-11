@@ -53,12 +53,31 @@
         <div id="main-content">
             <div id="file-tree">
                 <div id="file-tree-header" class="panel-header">
-                    <span class="panel-title">Files</span>
+                    <div class="sidebar-views">
+                        <button class="sidebar-view active" data-view="files" title="Files (Ctrl+Shift+E)">Files</button>
+                        <button class="sidebar-view" data-view="search" title="Search in files (Ctrl+Shift+F)">Search</button>
+                    </div>
                     <div id="file-tree-actions">
                         <button id="add-file-btn" class="icon-btn" title="Add File"><svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
                     </div>
                 </div>
                 <div id="file-list"></div>
+                <div id="search-view" hidden>
+                    <div class="search-inputs">
+                        <div class="find-field">
+                            <input type="text" id="search-input" placeholder="Search" spellcheck="false" autocomplete="off" />
+                            <button class="search-option" data-search-option="matchCase" title="Match case">Aa</button>
+                            <button class="search-option" data-search-option="wholeWord" title="Whole word"><u>ab</u></button>
+                            <button class="search-option" data-search-option="regex" title="Regular expression">.*</button>
+                        </div>
+                        <div class="find-field">
+                            <input type="text" id="replace-input" placeholder="Replace" spellcheck="false" autocomplete="off" />
+                            <button id="replace-all-btn" class="search-option" title="Replace all (Ctrl+Enter)" disabled><svg class="icon icon--sm" viewBox="0 0 24 24"><path d="M14 4a2 2 0 0 1 2-2"/><path d="M16 10a2 2 0 0 1-2-2"/><path d="M20 2a2 2 0 0 1 2 2"/><path d="M22 8a2 2 0 0 1-2 2"/><path d="m3 7 3 3 3-3"/><path d="M6 10V5a3 3 0 0 1 3-3h1"/><rect x="2" y="14" width="8" height="8" rx="2"/></svg></button>
+                        </div>
+                    </div>
+                    <div id="search-summary"></div>
+                    <div id="search-results"></div>
+                </div>
                 <div id="file-tree-resizer"></div>
             </div>
             <div id="editor-container">

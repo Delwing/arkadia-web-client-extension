@@ -1,13 +1,4 @@
-import path from 'node:path';
 import {expect, test} from './support/fixtures';
-
-// The editor loads esbuild's wasm from unpkg; serve the installed copy instead.
-const ESBUILD_WASM = path.resolve('node_modules/esbuild-wasm/esbuild.wasm');
-
-test.beforeEach(async ({page}) => {
-    await page.route(/unpkg\.com\/esbuild-wasm@[^/]+\/esbuild\.wasm/, route =>
-        route.fulfill({path: ESBUILD_WASM, contentType: 'application/wasm'}));
-});
 
 test('Plugin editor opens files in tabs, splits, and lists problems', async ({page}) => {
     await page.goto('/editor/');

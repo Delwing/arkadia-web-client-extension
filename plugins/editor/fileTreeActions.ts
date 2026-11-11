@@ -278,9 +278,6 @@ function startFolderRename(folderPath: string, currentFolderName: string) {
   }
 }
 
-// Deleted files' tabs close on their own (see renderCurrentFileTree); nothing else opens.
-const keepTabs = () => {}
-
 // Context menu action handler
 export async function handleContextMenuAction(action: string) {
   const target = getContextMenuTarget()
@@ -305,9 +302,7 @@ export async function handleContextMenuAction(action: string) {
           state.currentPlugin,
           state.editorModels,
           state.modifiedFiles,
-          state.currentFilePath,
-          updateStatus,
-          keepTabs
+          updateStatus
         )
         if (success) renderCurrentFileTree()
       } else {
@@ -315,9 +310,7 @@ export async function handleContextMenuAction(action: string) {
           target.path,
           state.currentPlugin,
           state.editorModels,
-          state.currentFilePath,
-          updateStatus,
-          keepTabs
+          updateStatus
         )
         if (success) renderCurrentFileTree()
       }
