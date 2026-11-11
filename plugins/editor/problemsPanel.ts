@@ -104,7 +104,8 @@ export function setupProblemsPanel({ getPluginId, openLocation }: ProblemsPanelO
     // Group by file; files with errors first, then by path
     const byFile = new Map<string, monaco.editor.IMarker[]>()
     for (const marker of markers) {
-      const filePath = decodeURIComponent(marker.resource.path.slice(pluginId.length + 2))
+      // Uri.path is already decoded; decoding again throws on a literal % in a file name
+      const filePath = marker.resource.path.slice(pluginId.length + 2)
       if (!byFile.has(filePath)) byFile.set(filePath, [])
       byFile.get(filePath)!.push(marker)
     }
