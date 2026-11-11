@@ -2,6 +2,7 @@ import { DataStore, createDataStoreSingleton } from '@modules/data/dataStore/Dat
 import { FetchJsonLoader, JsonDatasetSnapshot } from '@modules/data/dataStore/strategies/FetchJsonLoader';
 import { IndexedDbSingleRecordStrategy } from '@modules/data/dataStore/strategies/IndexedDbSingleRecordStrategy';
 import { RefreshMetadata } from '@modules/data/dataStore/types';
+import { isNonEmptyRecord, validateData } from '@modules/data/dataStore/validation';
 
 export interface HerbForms {
   mianownik: string;
@@ -62,5 +63,6 @@ export const getHerbsStore = createDataStoreSingleton(() =>
       snapshot: { dbName: 'ArkadiaHerbsDB', storeName: 'herbs', key: 'herbs' },
     }),
     ttlMs: TTL,
+    validate: validateData<HerbsData>(data => (isNonEmptyRecord(data.herb_id_to_odmiana) ? null : 'no herbs')),
   }),
 );

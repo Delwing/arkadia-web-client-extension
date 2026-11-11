@@ -10,6 +10,7 @@ import {
   extractGitHubReleaseTag,
 } from '@modules/data/dataStore/strategies/VersionCheckingLoader';
 import { RefreshMetadata } from '@modules/data/dataStore/types';
+import { isNonEmptyArray, validateData } from '@modules/data/dataStore/validation';
 
 export const MAP_DATA_URL = import.meta.env.VITE_MAP_DATA_URL ?? 'https://delwing.github.io/arkadia-mapa/data/mapExport.json';
 export const MAP_COLORS_URL = import.meta.env.VITE_MAP_COLORS_URL ?? 'https://delwing.github.io/arkadia-mapa/data/colors.json';
@@ -33,6 +34,7 @@ export const getMapDataStore = createDataStoreSingleton(() =>
     storage: new IndexedDbSingleRecordStrategy<MapDataSnapshot>({
       snapshot: { dbName: 'ArkadiaMapDB', storeName: 'mapData', key: 'mapExport' },
     }),
+    validate: validateData<MapData.Map>(data => (isNonEmptyArray(data) ? null : 'no map areas')),
   }),
 );
 
@@ -49,5 +51,6 @@ export const getMapColorsStore = createDataStoreSingleton(() =>
     storage: new IndexedDbSingleRecordStrategy<MapColorsSnapshot>({
       snapshot: { dbName: 'ArkadiaMapDB', storeName: 'mapColors', key: 'colors' },
     }),
+    validate: validateData<MapData.Env[]>(data => (isNonEmptyArray(data) ? null : 'no map colors')),
   }),
 );

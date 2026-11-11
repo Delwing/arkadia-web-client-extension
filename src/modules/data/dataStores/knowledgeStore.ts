@@ -6,6 +6,7 @@ import {
   IndexedDBConfig,
   storeInIndexedDB,
 } from '@modules/data/dataCache.ts';
+import { HttpStatusError, isNonEmptyRecord, validateData } from '@modules/data/dataStore/validation';
 
 export interface KnowledgeBookEntry {
   mianownik: string;
@@ -127,6 +128,9 @@ class KnowledgeLoader
     context: LoaderContext<KnowledgeSnapshot, RefreshMetadata>,
   ): Promise<LoaderResult<KnowledgeSnapshot, RefreshMetadata>> {
     const response = await this.fetchImpl(this.url);
+    if (!response.ok) {
+      throw new HttpStatusError(this.url, response.status);
+    }
     const data = (await response.json()) as KnowledgeFile;
 
     const libraries = data.libraries ?? {};
@@ -313,6 +317,10 @@ export const getKnowledgeStore = createDataStoreSingleton(
         },
       }),
       ttlMs: TTL,
+      // The snapshot also holds the user's library progress, which the loader
+      // prunes against the downloaded libraries: an empty download would wipe it
+      validate: validateData<KnowledgeSnapshotData>(data =>
+        isNonEmptyRecord(data.books) && isNonEmptyRecord(data.libraries) ? null : 'no books or libraries'),
     }),
 );
 

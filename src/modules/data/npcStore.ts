@@ -1,4 +1,5 @@
 import { DataStore } from '@modules/data/dataStore/DataStore';
+import { isNonEmptyArray } from '@modules/data/dataStore/validation';
 import {
   FetchJsonLoader,
   JsonDatasetSnapshot,
@@ -314,6 +315,8 @@ const store = new DataStore<NpcStoreSnapshot, RefreshMetadata>({
   loader,
   storage,
   ttlMs: TTL_MS,
+  // Only the download is checked: the user's own NPCs live in `local`
+  validate: (snapshot) => (isNonEmptyArray(snapshot.remote?.data) ? null : 'no NPCs'),
 });
 
 function ensureSnapshot(snapshot: NpcStoreSnapshot | undefined): NpcStoreSnapshot {

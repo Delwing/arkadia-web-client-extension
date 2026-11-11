@@ -13,11 +13,13 @@ import {
   KnowledgeCategoryBaseName,
 } from '@shared/knowledgeCategories.ts';
 import loadWiedza from '@modules/data/wiedzaLoader.ts';
+import { validateData } from '@modules/data/dataStore/validation';
 import {
   KnowledgeDetailsType,
   KNOWLEDGE_DETAILS_TYPES,
   KnowledgeCategoryDefinition,
   KnowledgeDefinitions,
+  countDefinitionEntries,
 } from '@modules/data/dataStores/wiedzaStore';
 
 // Re-export types from wiedzaStore for backwards compatibility
@@ -300,25 +302,25 @@ function sanitizeProgress(
         continue;
       }
 
-      const definition = definitions[baseCategory];
-      if (!definition) {
-        continue;
-      }
-
-      const normalizedDefinition = normalized[baseCategory];
+      // A category the definitions lack keeps its entries as unknown rather
+      // than losing them: definitions come from a download that can fail.
+      const normalizedDefinition = definitions[baseCategory] ? normalized[baseCategory] : undefined;
       const sanitizedEntries: KnowledgeEntriesMap = createEmptyProgress();
       const unknownEntries: KnowledgeEntriesMap = createEmptyProgress();
       const entries = ensureProgressEntries(categoryProgress.entries);
+      // Entries unknown last time are matched again, so a definitions list
+      // that lacked them for a while does not lose them for good
+      const previousUnknown = ensureProgressEntries(categoryProgress.unknownEntries);
 
       for (const type of KNOWLEDGE_DETAILS_TYPES) {
         const seen = new Set<string>();
-        for (const entry of entries[type]) {
+        for (const entry of [...entries[type], ...previousUnknown[type]]) {
           const normalizedEntry = normalizeEntry(entry);
           if (normalizedEntry.length === 0 || seen.has(normalizedEntry)) {
             continue;
           }
           seen.add(normalizedEntry);
-          const canonical = normalizedDefinition[type].get(normalizedEntry);
+          const canonical = normalizedDefinition?.[type].get(normalizedEntry);
           if (canonical) {
             sanitizedEntries[type].push(canonical);
           } else {
@@ -866,5 +868,9 @@ export const getKnowledgeDetailsStore = createDataStoreSingleton(
       loader: new KnowledgeDetailsLoader(),
       storage: new KnowledgeDetailsIndexedDbStrategy<RefreshMetadata>(),
       ttlMs: TTL,
+      // Wiedza unavailable means no definitions: keep the stored progress
+      // instead of re-sorting it against nothing
+      validate: validateData<KnowledgeDetailsSnapshotData>(data =>
+        countDefinitionEntries(data.definitions) > 0 ? null : 'no knowledge definitions'),
     }),
 );

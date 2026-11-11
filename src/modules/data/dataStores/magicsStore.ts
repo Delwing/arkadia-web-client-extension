@@ -2,6 +2,7 @@ import { DataStore, createDataStoreSingleton } from '@modules/data/dataStore/Dat
 import { FetchJsonLoader, JsonDatasetSnapshot } from '@modules/data/dataStore/strategies/FetchJsonLoader';
 import { IndexedDbSingleRecordStrategy } from '@modules/data/dataStore/strategies/IndexedDbSingleRecordStrategy';
 import { RefreshMetadata } from '@modules/data/dataStore/types';
+import { isNonEmptyRecord, validateData } from '@modules/data/dataStore/validation';
 
 /**
  * Grammatical cases of `odmiana` in magics_data_v3, singular first, then the
@@ -67,5 +68,6 @@ export const getMagicsStore = createDataStoreSingleton(() =>
       snapshot: { dbName: 'ArkadiaMagicsDB', storeName: 'magics', key: 'magics_v3' },
     }),
     ttlMs: TTL,
+    validate: validateData<MagicsFile>(data => (isNonEmptyRecord(data.magics) ? null : 'no magics')),
   }),
 );

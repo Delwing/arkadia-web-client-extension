@@ -9,6 +9,7 @@ let npcStore: NpcStoreModule;
 
 function mockFetchResponse(data: NpcRecord[]) {
   return Promise.resolve({
+    ok: true,
     json: () => Promise.resolve(data),
     headers: { get: () => null },
   } as any);

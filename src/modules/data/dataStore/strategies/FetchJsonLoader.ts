@@ -1,3 +1,4 @@
+import { HttpStatusError } from '../validation';
 import { LoaderContext, LoaderResult, LoaderStrategy, RefreshMetadata } from '../types';
 
 export interface FetchJsonLoaderOptions {
@@ -25,6 +26,10 @@ export class FetchJsonLoader<TData, TMeta extends RefreshMetadata = RefreshMetad
     context: LoaderContext<JsonDatasetSnapshot<TData>, TMeta>,
   ): Promise<LoaderResult<JsonDatasetSnapshot<TData>, TMeta>> {
     const response = await this.fetchImpl(this.url);
+    // An error page (403, 404, 5xx) is never the dataset, even when its body parses as JSON
+    if (!response.ok) {
+      throw new HttpStatusError(this.url, response.status);
+    }
     const data = await this.readJson(response, context);
 
     return {

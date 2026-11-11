@@ -1,6 +1,7 @@
 import { DataStore, createDataStoreSingleton, createDatasetStoreRegistry } from '@modules/data/dataStore/DataStore';
 import { SnapshotEventEmitter } from '@modules/data/dataStore/events';
 import { LoaderStrategy, RefreshMetadata, StorageStrategy } from '@modules/data/dataStore/types';
+import { InvalidSnapshotError } from '@modules/data/dataStore/validation';
 
 type Snapshot = { value: number };
 
@@ -452,6 +453,70 @@ describe('DataStore', () => {
     const store = new DataStore({ loader, storage });
 
     await expect(store.refresh()).rejects.toThrow('load failed');
+  });
+
+  describe('validate', () => {
+    const positive = (snapshot: Snapshot) => (snapshot.value > 0 ? null : 'empty');
+
+    it('keeps the stored snapshot when the download is refused', async () => {
+      const storage = new InMemoryStorage({ value: 7 }, { refreshedAt: 0 });
+      const loader: LoaderStrategy<Snapshot, Metadata> = {
+        load: jest.fn(async () => ({ snapshot: { value: 0 } })),
+      };
+      const store = new DataStore({ loader, storage, ttlMs: 1, clock: () => 10, validate: positive });
+      const received: Array<Snapshot | undefined> = [];
+      store.subscribe((s) => received.push(s), { emitInitial: false });
+
+      await expect(store.refresh()).rejects.toBeInstanceOf(InvalidSnapshotError);
+
+      expect(storage.snapshot).toEqual({ value: 7 });
+      expect(storage.snapshotWrites).toBe(0);
+      expect(storage.metadataWrites).toBe(0);
+      expect(await store.getSnapshot()).toEqual({ value: 7 });
+      expect(received).toEqual([]);
+    });
+
+    it('accepts a download the validator passes', async () => {
+      const storage = new InMemoryStorage({ value: 7 }, { refreshedAt: 0 });
+      const loader: LoaderStrategy<Snapshot, Metadata> = {
+        load: jest.fn(async () => ({ snapshot: { value: 8 } })),
+      };
+      const store = new DataStore({ loader, storage, ttlMs: 1, clock: () => 10, validate: positive });
+
+      expect(await store.refresh()).toEqual({ value: 8 });
+      expect(storage.snapshot).toEqual({ value: 8 });
+    });
+
+    it('treats a validator that throws as a refusal', async () => {
+      const storage = new InMemoryStorage({ value: 7 }, { refreshedAt: 0 });
+      const loader: LoaderStrategy<Snapshot, Metadata> = {
+        load: jest.fn(async () => ({ snapshot: { value: 8 } })),
+      };
+      const validate = () => { throw new Error('boom'); };
+      const store = new DataStore({ loader, storage, ttlMs: 1, clock: () => 10, validate });
+
+      await expect(store.refresh()).rejects.toThrow('boom');
+      expect(storage.snapshot).toEqual({ value: 7 });
+    });
+
+    it('re-downloads within the TTL, forced, when the stored snapshot is invalid', async () => {
+      const storage = new InMemoryStorage({ value: 0 }, { refreshedAt: 5 });
+      const loader: LoaderStrategy<Snapshot, Metadata> = {
+        load: jest.fn(async () => ({ snapshot: { value: 3 } })),
+      };
+      const store = new DataStore({ loader, storage, ttlMs: 1_000, clock: () => 10, validate: positive });
+
+      expect(await store.refresh()).toEqual({ value: 3 });
+      expect(loader.load).toHaveBeenCalledWith(expect.objectContaining({ force: true, previousSnapshot: { value: 0 } }));
+    });
+
+    it('keeps an invalid stored snapshot readable (it may hold user data)', async () => {
+      const storage = new InMemoryStorage({ value: 0 }, { refreshedAt: 5 });
+      const loader: LoaderStrategy<Snapshot, Metadata> = { load: jest.fn() };
+      const store = new DataStore({ loader, storage, validate: positive });
+
+      expect(await store.getSnapshot()).toEqual({ value: 0 });
+    });
   });
 });
 
