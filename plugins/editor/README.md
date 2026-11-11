@@ -92,6 +92,27 @@ File System Access API).
   rest from the plugin. Click the folder chip to unlink or change folders;
   unlinking leaves the files on disk.
 
+### Import from GitHub, and pull its changes
+
+**Import from GitHub** (welcome screen, or **GitHub…** in the plugin switcher)
+reads a plugin from a public repository and opens it as a new plugin. It takes
+`owner/repo`, `owner/repo/folder`, either with `@branch` (or a tag or commit),
+or a github.com address such as `https://github.com/owner/repo/tree/main/folder`.
+Without a branch it reads the default branch.
+
+- No account or token: private repositories are not supported. GitHub allows
+  60 API requests an hour without signing in; an import or a pull uses two
+  (file contents come from `raw.githubusercontent.com`, which does not count).
+- Only source files are taken, the same ones a linked local folder mirrors;
+  at most 300 files of up to 1 MB each.
+- **⋯ → Pull from GitHub** (shown only for an imported plugin) takes the
+  changes made on GitHub since the last import or pull. The plugin remembers
+  that commit and the git blob id of each file in it, so files you changed
+  here are kept. A file changed on both sides is the one thing it asks about:
+  keep yours, or use GitHub's. Unsaved changes are saved first.
+- Pulling only reads. To send changes back, link the plugin to a folder that
+  is a clone of the repository (above) and commit there.
+
 ### Editor Settings
 
 The gear at the top right holds the editor theme, font size, minimap and the

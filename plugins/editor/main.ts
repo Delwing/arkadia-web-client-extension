@@ -57,6 +57,7 @@ import {setupFilePicker, showFilePickerHandler} from './filePicker'
 import {setupDevServer, setupDevServerModal, showDevServerModal} from './devServerUi'
 import {followOpenPlugin, linkCurrentPluginToFolder, setupFolderLink, writeToLinkedFolder} from './folderLink'
 import {setupPanelResizers} from './panelResizers'
+import {importFromGithub, pullFromGithub, updateGithubMenu} from './githubLink'
 
 // Apply cached theme colors immediately to prevent flash of wrong colors
 applyInitialThemeFromCache()
@@ -99,6 +100,7 @@ function setupEventListeners() {
     onPick: (id) => { requestOpenPlugin(id) },
     onNew: showNewPluginModal,
     onImport: uploadPluginFromFile,
+    onImportGithub: importFromGithub,
   })
 
   const saveBtn = document.getElementById('save-btn')!
@@ -108,13 +110,14 @@ function setupEventListeners() {
   const actionsMenu = createPopover(
     document.getElementById('actions-btn')!,
     document.getElementById('actions-menu')!,
-    { align: 'right' }
+    { align: 'right', onOpen: updateGithubMenu }
   )
   const actions: Record<string, () => void> = {
     rename: renameCurrentPlugin,
     download: downloadCurrentPlugin,
     publish: publishCurrentPlugin,
     'link-folder': linkCurrentPluginToFolder,
+    'github-pull': pullFromGithub,
     delete: deleteCurrentPlugin,
   }
   document.getElementById('actions-menu')!.addEventListener('click', (e) => {
@@ -128,6 +131,7 @@ function setupEventListeners() {
   // Welcome screen
   document.getElementById('welcome-new-btn')!.addEventListener('click', showNewPluginModal)
   document.getElementById('welcome-import-btn')!.addEventListener('click', uploadPluginFromFile)
+  document.getElementById('welcome-github-btn')!.addEventListener('click', importFromGithub)
   document.getElementById('welcome-all-btn')!.addEventListener('click', () => pluginSwitcher?.open())
 
   // Settings (theme, font size, minimap, IDE)
