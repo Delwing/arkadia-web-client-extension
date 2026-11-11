@@ -254,7 +254,7 @@ export async function destroy() {
   // Cleanup code here
 }
 `
-  const tsTemplate = `import PluginApi, { PluginInfo } from "plugin-api";
+  const tsTemplate = `import type { PluginApi, PluginInfo } from "@arkadia/plugin-types";
 
 export async function init(api: PluginApi): Promise<PluginInfo> {
   // Your plugin initialization code here
