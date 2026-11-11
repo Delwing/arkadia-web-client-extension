@@ -1,6 +1,7 @@
 import { FetchJsonLoader } from '@modules/data/dataStore/strategies/FetchJsonLoader';
 import { LoaderContext } from '@modules/data/dataStore/types';
 import { RefreshMetadata } from '@modules/data/dataStore/types';
+import { HttpStatusError } from '@modules/data/dataStore/validation';
 
 // Polyfill TextDecoder for jsdom environments where it may not be available.
 // The FetchJsonLoader source uses TextDecoder internally on the streaming path.
@@ -70,6 +71,15 @@ function makeContext(overrides: Partial<LoaderContext<any, Meta>> = {}): LoaderC
 }
 
 describe('FetchJsonLoader', () => {
+  it.each([403, 404, 500])('rejects an HTTP %i response even when its body is JSON', async (status) => {
+    const response = { ...makeJsonResponse({ error: 'Forbidden' }), ok: false, status } as unknown as Response;
+    const mockFetch = jest.fn(async () => response);
+    const loader = new FetchJsonLoader({ url: 'https://example.com/data.json', fetchImpl: mockFetch as any });
+
+    await expect(loader.load(makeContext())).rejects.toBeInstanceOf(HttpStatusError);
+    expect(response.json).not.toHaveBeenCalled();
+  });
+
   describe('when there is no response body (fallback path)', () => {
     it('loads JSON data from the configured URL', async () => {
       const payload = { items: [1, 2, 3] };

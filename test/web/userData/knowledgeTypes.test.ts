@@ -44,7 +44,7 @@ const fetchMock = vi.fn(async (url: string) => {
     const body = url === KNOWLEDGE_URL
         ? { version: 1, books: BOOKS, libraries: LIBRARIES }
         : url === WIEDZA_URL
-            ? { success: true, data: { data: [] } }
+            ? { success: true, data: { data: [{ entry: 'Zbadales cos' }] } }
             : {};
     return { ok: true, json: async () => body } as Response;
 });

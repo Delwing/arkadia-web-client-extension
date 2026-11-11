@@ -2,6 +2,7 @@ import { DataStore, createDataStoreSingleton } from './dataStore/DataStore';
 import type { ProgressListener, RefreshMetadata, SubscriptionOptions } from './dataStore/types';
 import { WorkerLoader, type WorkerLoaderMetadata } from './dataStore/strategies/WorkerLoader';
 import { IndexedDbCollectionStrategy } from './indexedDbCollectionStrategy';
+import { isNonEmptyArray } from './dataStore/validation';
 import type { PersonEntry } from '@client/types/people';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -28,6 +29,7 @@ const getPeopleStore = createDataStoreSingleton(() => {
     loader,
     storage,
     ttlMs: ONE_DAY_MS,
+    validate: (people) => (isNonEmptyArray(people) ? null : 'no people'),
   });
 });
 

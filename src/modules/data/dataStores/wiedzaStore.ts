@@ -8,6 +8,7 @@ import {
 
 } from '@shared/knowledgeCategories.ts';
 import { stripPolishCharacters } from '@shared/stripPolishCharacters.ts';
+import { validateData } from '@modules/data/dataStore/validation';
 
 // API endpoint for wiedza data
 export const WIEDZA_URL =
@@ -43,6 +44,21 @@ export interface KnowledgeCategoryDefinition {
 }
 
 export type KnowledgeDefinitions = Record<KnowledgeCategoryBaseName, KnowledgeCategoryDefinition>;
+
+/** How many entries the definitions hold across all categories and types. */
+export function countDefinitionEntries(definitions: KnowledgeDefinitions | undefined): number {
+  if (!definitions || typeof definitions !== 'object') {
+    return 0;
+  }
+  let count = 0;
+  for (const definition of Object.values(definitions) as Array<KnowledgeCategoryDefinition | undefined>) {
+    if (!definition) continue;
+    for (const type of KNOWLEDGE_DETAILS_TYPES) {
+      count += Array.isArray(definition[type]) ? definition[type].length : 0;
+    }
+  }
+  return count;
+}
 
 // Processed data structure (single source of truth)
 export interface WiedzaProcessedData {
@@ -157,6 +173,10 @@ class WiedzaTransformingLoader implements LoaderStrategy<WiedzaSnapshot, Refresh
     }
 
     const apiResponse = result.snapshot.data;
+    // admin-ajax answers errors with 200 and `{ success: false }` (or a bare 0 / -1)
+    if (!apiResponse || typeof apiResponse !== 'object' || apiResponse.success === false) {
+      throw new Error('Wiedza API returned an error response');
+    }
     const categories = Array.isArray(apiResponse?.data?.data) ? apiResponse.data.data : [];
 
     // Transform raw data into structured definitions
@@ -209,5 +229,7 @@ export const getWiedzaStore = createDataStoreSingleton(() => {
       },
     }),
     ttlMs: 24 * 60 * 60 * 1000, // 24 hours
+    validate: validateData<WiedzaProcessedData>(data =>
+      countDefinitionEntries(data.definitions) > 0 ? null : 'no knowledge entries'),
   });
 });

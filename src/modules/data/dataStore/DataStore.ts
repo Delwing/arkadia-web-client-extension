@@ -7,6 +7,7 @@ import {
   StorageStrategy,
   SubscriptionOptions,
 } from './types';
+import {InvalidSnapshotError, SnapshotValidator} from './validation';
 
 type Clock = () => number;
 
@@ -20,6 +21,14 @@ export interface DataStoreOptions<TSnapshot, TMeta extends RefreshMetadata> {
   storage: StorageStrategy<TSnapshot, TMeta>;
   ttlMs?: number;
   clock?: Clock;
+  /**
+   * Checks what the loader produced before it replaces the stored snapshot.
+   * A refused result makes `refresh()` reject with `InvalidSnapshotError` and
+   * leaves the stored snapshot as it was. A stored snapshot this refuses is
+   * kept (it may hold the user's own data) but counts as stale, so the next
+   * `refresh()` downloads again even within the TTL.
+   */
+  validate?: SnapshotValidator<TSnapshot>;
 }
 
 export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadata> {
@@ -27,6 +36,7 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
   private readonly storage: StorageStrategy<TSnapshot, TMeta>;
   private readonly ttlMs?: number;
   private readonly clock: Clock;
+  private readonly validate?: SnapshotValidator<TSnapshot>;
   private readonly emitter = new SnapshotEventEmitter<TSnapshot>();
 
   private currentSnapshot: TSnapshot | undefined;
@@ -49,6 +59,7 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
     this.storage = options.storage;
     this.ttlMs = options.ttlMs;
     this.clock = options.clock ?? (() => Date.now());
+    this.validate = options.validate;
   }
 
   subscribe(listener: SnapshotListener<TSnapshot>, options: SubscriptionOptions = {}): () => void {
@@ -74,7 +85,7 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
       if (options.onProgress) {
         this.pendingProgressListeners.push(options.onProgress);
       }
-      this.activeRefresh = this.performRefresh(options.force === true);
+      this.activeRefresh = this.performRefresh(options.force === true || this.problemWith(this.currentSnapshot) !== null);
     } else if (options.onProgress) {
       if (!this.pendingProgressListeners) {
         this.pendingProgressListeners = [];
@@ -143,6 +154,9 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
     if (this.currentMetadata === undefined) {
       return true;
     }
+    if (this.problemWith(this.currentSnapshot) !== null) {
+      return true;
+    }
     if (this.ttlMs == null) {
       return true;
     }
@@ -160,6 +174,12 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
       force,
       onProgress,
     });
+
+    const problem = this.problemWith(result.snapshot);
+    if (problem !== null) {
+      console.warn(`[DataStore] keeping the stored data, download rejected: ${problem}`);
+      throw new InvalidSnapshotError(problem);
+    }
 
     // If local changes happened during refresh, don't overwrite with stale data
     if (this.snapshotVersion !== versionAtStart) {
@@ -189,6 +209,17 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
 
     this.emitter.emit(this.currentSnapshot);
     return this.currentSnapshot;
+  }
+
+  private problemWith(snapshot: TSnapshot | undefined): string | null {
+    if (!this.validate || snapshot === undefined) {
+      return null;
+    }
+    try {
+      return this.validate(snapshot);
+    } catch (error) {
+      return error instanceof Error ? error.message : String(error);
+    }
   }
 }
 

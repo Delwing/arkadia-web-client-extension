@@ -2,6 +2,7 @@ import { DataStore, createDataStoreSingleton } from '@modules/data/dataStore/Dat
 import { FetchJsonLoader, JsonDatasetSnapshot } from '@modules/data/dataStore/strategies/FetchJsonLoader';
 import { IndexedDbSingleRecordStrategy } from '@modules/data/dataStore/strategies/IndexedDbSingleRecordStrategy';
 import { RefreshMetadata } from '@modules/data/dataStore/types';
+import { isNonEmptyArray, validateData } from '@modules/data/dataStore/validation';
 
 export interface MagicKeysData {
   magic_keys: string[];
@@ -23,5 +24,6 @@ export const getMagicKeysStore = createDataStoreSingleton(() =>
       snapshot: { dbName: 'ArkadiaMagicKeysDB', storeName: 'magicKeys', key: 'keys' },
     }),
     ttlMs: TTL,
+    validate: validateData<MagicKeysData>(data => (isNonEmptyArray(data.magic_keys) ? null : 'no magic keys')),
   }),
 );
