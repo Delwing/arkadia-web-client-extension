@@ -1,5 +1,5 @@
 /** Renaming, creating and deleting files and folders in the open plugin, from the tree and its menus. */
-import {createPluginFile, getLanguageFromPath} from '@client/utils/pluginEditorStorage.ts'
+import {createPluginFile} from '@client/utils/pluginEditorStorage.ts'
 import {updateStatus} from './utils'
 import {clearContextMenuTarget, getContextMenuTarget, hideContextMenu, showRootContextMenu} from './contextMenu'
 import {createFileInline, createFolderInline, deleteFile, deleteFolder} from './fileOperations'
@@ -252,21 +252,14 @@ function startFolderRename(folderPath: string, currentFolderName: string) {
       })
     }
 
-    // Rename all files in the folder
+    // Rename all files in the folder; their models, typings and open tabs follow.
     const filesToRename = Object.keys(state.currentPlugin.files).filter(path =>
       path.startsWith(folderPath + '/')
     )
 
     filesToRename.forEach(oldPath => {
       const relativePath = oldPath.substring(folderPath.length + 1)
-      const newPath = `${newFolderPath}/${relativePath}`
-
-      state.currentPlugin!.files[newPath] = {
-        ...state.currentPlugin!.files[oldPath],
-        path: newPath,
-        language: getLanguageFromPath(newPath)
-      }
-      delete state.currentPlugin!.files[oldPath]
+      renameFileWrapper(oldPath, `${newFolderPath}/${relativePath}`)
     })
 
     renderCurrentFileTree()
@@ -284,6 +277,9 @@ function startFolderRename(folderPath: string, currentFolderName: string) {
     }
   }
 }
+
+// Deleted files' tabs close on their own (see renderCurrentFileTree); nothing else opens.
+const keepTabs = () => {}
 
 // Context menu action handler
 export async function handleContextMenuAction(action: string) {
@@ -311,7 +307,7 @@ export async function handleContextMenuAction(action: string) {
           state.modifiedFiles,
           state.currentFilePath,
           updateStatus,
-          switchToFile
+          keepTabs
         )
         if (success) renderCurrentFileTree()
       } else {
@@ -321,10 +317,13 @@ export async function handleContextMenuAction(action: string) {
           state.editorModels,
           state.currentFilePath,
           updateStatus,
-          switchToFile
+          keepTabs
         )
         if (success) renderCurrentFileTree()
       }
+      break
+    case 'open-side':
+      if (!target.isFolder) switchToFile(target.path, undefined, 'side')
       break
     case 'new-file':
       if (target.isFolder || target.path === '') {

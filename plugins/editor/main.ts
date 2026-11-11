@@ -11,7 +11,7 @@ import 'file-icons-js/css/style.css'
 
 import {updateStatus} from './utils'
 import {initEsbuild} from './bundler'
-import {initializeEditor} from './monaco/editorSetup'
+import {createCodeEditor, setupMonaco} from './monaco/editorSetup'
 import {applyInitialThemeFromCache, changeTheme, getSavedTheme} from './monaco/themes'
 import {showNewPluginModal} from './modals'
 import {CodingAgentPanel} from './codingAgentPanel'
@@ -28,9 +28,13 @@ import {
   requestOpenPlugin,
   saveCurrentPlugin,
   sessionHooks,
+  setupEditors,
+  splitEditor,
   state,
   switchToFile,
 } from './session'
+import * as groups from './editorGroups'
+import {setupProblemsPanel} from './problemsPanel'
 import {setupFileTreeActions} from './fileTreeActions'
 import {
   deleteCurrentPlugin,
@@ -114,7 +118,10 @@ function setupEventListeners() {
   const themeSelect = document.getElementById('theme-select') as HTMLSelectElement
   themeSelect.value = getSavedTheme()
   setupSettings(
-    () => [state.editor, getJsPreviewEditor()].filter((e): e is monaco.editor.IStandaloneCodeEditor => !!e),
+    () => ({
+      code: groups.allEditors(),
+      other: [getJsPreviewEditor()].filter((e): e is monaco.editor.IStandaloneCodeEditor => !!e),
+    }),
     (theme) => changeTheme(theme),
     showDevServerModal
   )
@@ -166,8 +173,30 @@ function setupEventListeners() {
 async function init() {
   updateStatus('Initializing...', 'normal')
 
-  const container = document.getElementById('editor-container')!
-  state.editor = await initializeEditor(container, updateStatus, showFilePickerHandler, switchToFile)
+  await setupMonaco(updateStatus, (filePath, position, source) => {
+    // A definition opens in the group it was asked from
+    groups.activateEditor(source)
+    switchToFile(filePath, position)
+  })
+
+  const statusBar = setupStatusBar(() => groups.activeEditor(), () => state.currentPluginId)
+  const problems = setupProblemsPanel({
+    getPluginId: () => state.currentPluginId,
+    openLocation: (filePath, range) => {
+      switchToFile(filePath, range)
+      groups.activeEditor()?.focus()
+    },
+  })
+  sessionHooks.refreshStatusBar = () => {
+    statusBar.refresh()
+    problems.refresh()
+  }
+
+  setupEditors(document.getElementById('editor-groups')!, (host) => {
+    const editor = createCodeEditor(host, { showFilePicker: showFilePickerHandler, splitEditor })
+    statusBar.watch(editor)
+    return editor
+  })
 
   // Initialize agent panel
   agentPanel = new CodingAgentPanel(() => ({
@@ -181,12 +210,6 @@ async function init() {
     renderFileTree: renderCurrentFileTree,
     switchToFile
   }))
-
-  sessionHooks.refreshStatusBar = setupStatusBar(
-    state.editor,
-    () => state.currentPluginId,
-    (filePath, position) => switchToFile(filePath, position)
-  )
 
   await initEsbuild(updateStatus)
   await reloadPluginList()

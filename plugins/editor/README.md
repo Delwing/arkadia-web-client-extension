@@ -10,6 +10,8 @@ A standalone Monaco-based code editor for creating and editing Arkadia plugins w
 - **Separate Storage**: Plugins edited in the editor are stored in a separate IndexedDB database (`ArkadiaPluginEditorDB`)
 - **Auto-sync**: Compiled JavaScript is automatically synced to the main plugin storage for loading by the game client
 - **Dual-file Storage**: TypeScript source is preserved for editing, while compiled JavaScript is used for execution
+- **Tabs and split view**: Files open as tabs; split the editor in two (the button at the end of the tab strip, Ctrl+\\, or "Open to the Side" in the file tree's menu) and drag tabs to reorder them or move them between the two groups. Middle-click closes a tab; right-click has Close Others, Close to the Right and Move. Open tabs are remembered per plugin.
+- **Problems panel**: Click the error/warning counts in the status bar (or Ctrl+Shift+M) to list every error and warning in the plugin, grouped by file; click one to jump to it
 
 ## Architecture
 
@@ -131,6 +133,10 @@ export async function destroy(): Promise<void> {
 ## Keyboard Shortcuts
 
 - **Ctrl+S / Cmd+S**: Save current plugin
+- **Ctrl+O**: Switch plugin
+- **Ctrl+P**: Go to file
+- **Ctrl+\\**: Split the editor (open the current file beside it)
+- **Ctrl+Shift+M**: Show or hide the Problems panel
 - Monaco editor includes standard shortcuts (Ctrl+F for find, etc.)
 
 ## Technical Details

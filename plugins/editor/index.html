@@ -61,7 +61,23 @@
                 <div id="file-list"></div>
                 <div id="file-tree-resizer"></div>
             </div>
-            <div id="editor-container"></div>
+            <div id="editor-container">
+                <div id="editor-groups"></div>
+                <div id="problems-panel" hidden>
+                    <div id="problems-resizer"></div>
+                    <div class="panel-header">
+                        <span class="panel-title">Problems</span>
+                        <span id="problems-summary"></span>
+                        <div class="spacer"></div>
+                        <div class="problems-filter">
+                            <button class="active" data-problems-filter="all">All</button>
+                            <button data-problems-filter="errors">Errors</button>
+                        </div>
+                        <button id="problems-close-btn" class="icon-btn" title="Close (Ctrl+Shift+M)"><svg class="icon" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+                    </div>
+                    <div id="problems-list"></div>
+                </div>
+            </div>
             <div id="welcome" hidden>
                 <div class="welcome-inner">
                     <div class="welcome-intro">
@@ -136,7 +152,7 @@
         <div id="status-bar">
             <span id="status-dot"></span>
             <span id="status-text">Ready</span>
-            <button id="problems-btn" title="Go to the first problem" hidden>
+            <button id="problems-btn" title="Problems (Ctrl+Shift+M)" hidden>
                 <span class="problems-count problems-count--error"><svg class="icon icon--xs" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg><span id="problems-errors">0</span></span>
                 <span class="problems-count problems-count--warning"><svg class="icon icon--xs" viewBox="0 0 24 24"><path d="m21.7 18-8-14a2 2 0 0 0-3.5 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><span id="problems-warnings">0</span></span>
             </button>
@@ -337,6 +353,7 @@
 
     <!-- Context menu for file tree -->
     <div id="context-menu" class="context-menu" style="display: none;">
+        <div class="context-menu-item" data-action="open-side">Open to the Side</div>
         <div class="context-menu-item" data-action="rename">Rename</div>
         <div class="context-menu-item" data-action="delete">Delete</div>
         <div class="context-menu-separator"></div>

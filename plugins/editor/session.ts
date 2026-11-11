@@ -23,6 +23,8 @@ import pluginApiTypes from '../types/index.d.ts?raw'
 import {openDialog} from './dialogs'
 import {renderWelcome, setWelcomeVisible} from './welcome'
 import {setBreadcrumb, setHeaderPlugin, setSaveState} from './chrome'
+import * as groups from './editorGroups'
+import {emptyLayout, openTab, sanitizeLayout, type TabLayout} from './tabState'
 
 /** What the open plugin tells the rest of the editor. Set once at startup. */
 export const sessionHooks = {
@@ -33,6 +35,8 @@ export const sessionHooks = {
   /** A save stored these files. */
   saved: async (_pluginId: string, _files: Record<string, PluginFile>): Promise<void> => {},
   refreshStatusBar: (): void => {},
+  /** The active editor or the file it shows changed. */
+  activeEditorChanged: (): void => {},
 }
 
 // Global editor state
@@ -171,7 +175,7 @@ export function closePlugin() {
   state.currentFilePath = null
   state.modifiedFiles.clear()
   state.baseline = null
-  state.editor?.setValue('')
+  groups.resetLayout(emptyLayout())
   getDevServer().setCurrentPluginId(null)
   sessionHooks.followPlugin(null)
 
@@ -188,13 +192,22 @@ function showDisabledFileTree() {
   fileList.innerHTML = '<div class="file-tree-disabled">No plugin loaded</div>'
 }
 
+/**
+ * Redraw the file tree, the save state and the tabs (tabs of files that are
+ * gone close). Called after every change to the open plugin's files.
+ */
 export function renderCurrentFileTree() {
   if (!state.currentPlugin) {
     showDisabledFileTree()
     return
   }
-
   updateDirtyUI()
+  drawFileTree()
+  groups.sync(path => tabExists(path))
+}
+
+function drawFileTree() {
+  if (!state.currentPlugin) return
   renderFileTree(state.currentPlugin, state.currentFilePath, state.modifiedFiles, {
     onFileClick: switchToFile,
     onFileDelete: async (path) => {
@@ -204,7 +217,7 @@ export function renderCurrentFileTree() {
         state.editorModels,
         state.currentFilePath,
         updateStatus,
-        switchToFile
+        () => {} // its tabs close in renderCurrentFileTree
       )
       if (success) renderCurrentFileTree()
     },
@@ -256,72 +269,162 @@ export function createFileModel(pluginId: string, filePath: string, file: Plugin
  */
 export function setModelFromIDE(model: monaco.editor.ITextModel, content: string) {
   if (model.getValue() === content) return
-  const shown = state.editor?.getModel() === model
-  const selection = shown ? state.editor!.getSelection() : null
+  const showing = groups.allEditors()
+    .filter(editor => editor.getModel() === model)
+    .map(editor => ({ editor, selection: editor.getSelection() }))
   isReceivingFromIDE = true
   try {
     model.setValue(content)
   } finally {
     isReceivingFromIDE = false
   }
-  if (selection) state.editor!.setSelection(selection)
+  for (const { editor, selection } of showing) {
+    if (selection) editor.setSelection(selection)
+  }
 }
 
 function revealPosition(position?: IPosition | IRange) {
-  if (position === undefined || !state.editor) return
+  const editor = groups.activeEditor()
+  if (position === undefined || !editor) return
   if ("startLineNumber" in position) {
-    state.editor.setPosition({lineNumber: position.startLineNumber, column: position.startColumn})
-    state.editor.revealLineInCenter(position.startLineNumber)
+    editor.setPosition({lineNumber: position.startLineNumber, column: position.startColumn})
+    editor.revealLineInCenter(position.startLineNumber)
   } else if ("lineNumber" in position) {
-    state.editor.setPosition(position)
-    state.editor.revealLineInCenter(position.lineNumber)
+    editor.setPosition(position)
+    editor.revealLineInCenter(position.lineNumber)
   }
 }
 
-// The read-only plugin API typings, shown when a definition jumps into them
+// The read-only plugin API typings, shown when a definition jumps into them.
+// They open in a tab of their own under this name.
+export const API_TYPES_TAB = '@arkadia/plugin-api.d.ts'
 const PLUGIN_API_URI = monaco.Uri.parse("file:plugin-api.ts")
 
-function showPluginApiTypes(position?: IPosition | IRange) {
-  if (!state.editor) return
-  const model = monaco.editor.getModel(PLUGIN_API_URI)
+function pluginApiModel(): monaco.editor.ITextModel {
+  return monaco.editor.getModel(PLUGIN_API_URI)
     ?? monaco.editor.createModel(pluginApiTypes, "typescript", PLUGIN_API_URI)
-  state.editor.updateOptions({readOnly: true})
-  if (state.editor.getModel() !== model) {
-    state.editor.setModel(model)
-    const sub = state.editor.onDidChangeModel(() => {
-      sub.dispose()
-      model.dispose()
-    })
-  }
-  revealPosition(position)
 }
 
-// Switch to a different file in the editor
-export function switchToFile(filePath: string, position?: IPosition | IRange) {
-  if (!state.currentPlugin || !state.currentPluginId || !state.editor) return
+function tabExists(path: string): boolean {
+  return path === API_TYPES_TAB || !!state.currentPlugin?.files[path]
+}
+
+/** The model a tab shows, made on first use. */
+function modelForTab(path: string): monaco.editor.ITextModel | null {
+  if (path === API_TYPES_TAB) return pluginApiModel()
+  const file = state.currentPlugin?.files[path]
+  if (!file || !state.currentPluginId) return null
+  const model = state.editorModels.get(path)
+  return model && !model.isDisposed() ? model : createFileModel(state.currentPluginId, path, file)
+}
+
+/** "index.ts", with its folder when another open tab has the same name. */
+function tabLabel(path: string): { name: string; detail?: string; readOnly?: boolean } {
+  if (path === API_TYPES_TAB) return { name: 'plugin-api.d.ts', detail: 'read-only', readOnly: true }
+  const slash = path.lastIndexOf('/')
+  const name = path.slice(slash + 1)
+  const clash = groups.getLayout().groups.some(group =>
+    group.tabs.some(other => other !== path && other.slice(other.lastIndexOf('/') + 1) === name)
+  )
+  return { name, detail: clash && slash >= 0 ? path.slice(0, slash) : undefined }
+}
+
+const LAYOUT_KEY = (pluginId: string) => `plugin-editor-tabs:${pluginId}`
+
+function storeLayout() {
+  if (!state.currentPluginId) return
+  try {
+    localStorage.setItem(LAYOUT_KEY(state.currentPluginId), JSON.stringify(groups.getLayout()))
+  } catch { /* storage full or blocked: tabs just won't come back */ }
+}
+
+function storedLayout(pluginId: string): unknown {
+  try {
+    const raw = localStorage.getItem(LAYOUT_KEY(pluginId))
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+/** Something about the tabs changed: follow the active group's file everywhere. */
+function onGroupsChanged() {
+  state.editor = groups.activeEditor()
+  const path = groups.activePath()
+  state.currentFilePath = path && path !== API_TYPES_TAB ? path : null
+  // The typings model declares the API a second time; keep it only while shown.
+  if (!groups.isOpen(API_TYPES_TAB)) monaco.editor.getModel(PLUGIN_API_URI)?.dispose()
+  if (state.currentPlugin) {
+    drawFileTree()
+    setBreadcrumb(path === API_TYPES_TAB ? 'plugin-api.d.ts' : path)
+    storeLayout()
+  }
+  sessionHooks.refreshStatusBar()
+  sessionHooks.activeEditorChanged()
+}
+
+/** Set up the editor groups in `host`; `createEditor` makes each group's Monaco editor. */
+export function setupEditors(host: HTMLElement, createEditor: (container: HTMLElement) => monaco.editor.IStandaloneCodeEditor) {
+  groups.setupEditorGroups(host, {
+    resolveModel: modelForTab,
+    isReadOnly: path => path === API_TYPES_TAB,
+    isModified: path => state.modifiedFiles.has(path),
+    tabLabel,
+    createEditor,
+    onChange: onGroupsChanged,
+  })
+  state.editor = groups.activeEditor()
+}
+
+/**
+ * Show a file of the open plugin (or the API typings) in the active group,
+ * or with `target` 'side' in the group beside it, at `position` if given.
+ */
+export function switchToFile(filePath: string, position?: IPosition | IRange, target: 'active' | 'side' = 'active') {
+  if (!state.currentPlugin || !state.currentPluginId) return
 
   // The API typings, under the editor's own name or the npm package's
-  if (filePath.startsWith("@types") || filePath.startsWith("@arkadia/")) {
-    showPluginApiTypes(position)
+  if (filePath === API_TYPES_TAB || filePath.startsWith("@types") || filePath.startsWith("@arkadia/")) {
+    groups.openFile(API_TYPES_TAB, target)
+    revealPosition(position)
     return
   }
 
-  const file = state.currentPlugin.files[filePath]
-  if (!file) {
+  if (!state.currentPlugin.files[filePath]) {
     updateStatus(`File not found: ${filePath}`, 'error')
     return
   }
 
-  state.editor.updateOptions({readOnly: false})
-  state.currentFilePath = filePath
-
-  const model = state.editorModels.get(filePath) ?? createFileModel(state.currentPluginId, filePath, file)
-  state.editor.setModel(model)
+  groups.openFile(filePath, target)
   revealPosition(position)
-
-  renderCurrentFileTree()
-  setBreadcrumb(filePath)
   updateStatus(`Editing: ${filePath}`, 'normal')
+}
+
+/** Close a file's tabs in every group. */
+export function closeFileTabs(filePath: string) {
+  const layout = groups.getLayout()
+  layout.groups.forEach((group, index) => {
+    if (group.tabs.includes(filePath)) groups.closeFile(index, filePath)
+  })
+}
+
+/** Split the active editor: its file opens in a second group beside it. */
+export function splitEditor() {
+  groups.splitRight()
+}
+
+/** The open tabs to restore for a plugin: what was open last time, with `openFile` shown. */
+function initialLayout(pluginId: string, files: Record<string, PluginFile>, entryPoint: string, openFile?: string | null): TabLayout {
+  const layout = sanitizeLayout(storedLayout(pluginId), path => !!files[path] || path === API_TYPES_TAB) ?? emptyLayout()
+  if (openFile && files[openFile]) {
+    openTab(layout.groups[layout.activeGroup], openFile)
+  }
+  if (!layout.groups.some(group => group.active)) {
+    const first = files[entryPoint] ? entryPoint : Object.keys(files)[0]
+    if (first) openTab(layout.groups[0], first)
+    layout.activeGroup = 0
+  }
+  return layout
 }
 
 // Bumped by every load; a load that finds a newer one started gives way.
@@ -366,7 +469,7 @@ export async function loadPlugin(pluginId: string, openFile?: string | null) {
 
   state.currentPluginId = pluginId
   state.currentPlugin = plugin
-  state.currentFilePath = openFile && plugin.files[openFile] ? openFile : plugin.entryPoint
+  state.currentFilePath = null
   state.modifiedFiles.clear()
   state.baseline = baselineOf(plugin.files, plugin.folders)
 
@@ -396,10 +499,9 @@ export async function loadPlugin(pluginId: string, openFile?: string | null) {
     createFileModel(pluginId, filePath, file, false)
   }
 
-  // Render file tree
+  // Reopen the tabs it had, then draw the tree
+  groups.resetLayout(initialLayout(pluginId, plugin.files, plugin.entryPoint, openFile))
   renderCurrentFileTree()
-
-  switchToFile(state.currentFilePath!)
   sessionHooks.refreshStatusBar()
   updateStatus(`Loaded: ${plugin.name}`, 'success')
 
@@ -435,14 +537,12 @@ export function renameFileWrapper(oldPath: string, newPath: string): boolean {
     state.editorModels,
     state.currentFilePath,
     updateStatus,
-    switchToFile
+    () => {} // its tabs follow below
   )
 
   if (success) {
-    // Only update currentFilePath if the renamed file was the currently open file
-    if (state.currentFilePath === oldPath) {
-      state.currentFilePath = newPath
-    }
+    if (state.modifiedFiles.delete(oldPath)) state.modifiedFiles.add(newPath)
+    groups.renameFile(oldPath, newPath)
     renderCurrentFileTree()
   }
 

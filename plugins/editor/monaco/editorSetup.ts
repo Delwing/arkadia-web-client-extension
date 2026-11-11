@@ -8,13 +8,15 @@ import {registerSnippets} from '../snippets'
 import {applyThemeToUI, defineCustomTheme, editorThemes, getEditorPrefs, getSavedTheme} from './themes'
 import {setupTypeScriptEnvironment} from './typings'
 
-/** Monaco with the plugin typings, Shiki highlighting, snippets and the file-switching hooks. */
-export async function initializeEditor(
-  container: HTMLElement,
+/**
+ * One-time Monaco setup: the plugin typings, Shiki highlighting, the theme,
+ * snippets, and following definitions into other files (`openFile` gets the
+ * editor the jump started in).
+ */
+export async function setupMonaco(
   updateStatus: (message: string, type: StatusType) => void,
-  showFilePickerCallback: () => void,
-  switchToFileCallback: (path: string, position?: IPosition | IRange) => void
-): Promise<monaco.editor.IStandaloneCodeEditor> {
+  openFile: (path: string, position: IPosition | IRange | undefined, source: monaco.editor.ICodeEditor) => void
+): Promise<void> {
   // Setup TypeScript environment first
   setupTypeScriptEnvironment()
 
@@ -47,18 +49,41 @@ export async function initializeEditor(
   // Register snippets
   registerSnippets()
 
-  // Create a model with a proper URI including file extension
-  const uri = monaco.Uri.parse('file:///plugin.ts')
-  const model = monaco.editor.createModel('', 'typescript', uri)
+  monaco.editor.registerEditorOpener({
+    openCodeEditor(source, resource, position): boolean | Promise<boolean> {
 
-  updateStatus('Initializing editor...', 'normal')
+      // Extract file path from URI like: file:///pluginId/path/to/file.ts
+      // Remove leading / to get: pluginId/path/to/file.ts
+      const fullPath = resource.path.substring(1)
+      const parts = fullPath.split('/')
+      // Skip the first part (pluginId) and join the rest to get: path/to/file.ts
+      let filePath = parts.slice(1).join('/')
 
-  // Load saved theme preference
-  const savedTheme = getSavedTheme()
+      // If the path is a .d.ts file for a JSON module, redirect to the actual .json file
+      if (filePath.endsWith('.json.d.ts')) {
+        filePath = filePath.replace('.json.d.ts', '.json')
+      }
 
+      if (filePath) {
+        openFile(filePath, position, source)
+      }
+      return false
+    }
+  })
+
+  // Apply initial theme to UI
+  applyThemeToUI(getSavedTheme())
+  updateStatus('Editor initialized', 'success')
+}
+
+/** One code editor (an editor group's), with the editor's options and actions. */
+export function createCodeEditor(
+  container: HTMLElement,
+  actions: { showFilePicker: () => void; splitEditor: () => void }
+): monaco.editor.IStandaloneCodeEditor {
   const editor = monaco.editor.create(container, {
-    model: model,
-    theme: savedTheme,
+    model: null,
+    theme: getSavedTheme(),
     automaticLayout: true,
     minimap: { enabled: getEditorPrefs().minimap },
     fontSize: getEditorPrefs().fontSize,
@@ -108,28 +133,6 @@ export async function initializeEditor(
     "semanticHighlighting.enabled": true,
   })
 
-  monaco.editor.registerEditorOpener({
-    openCodeEditor(_source, resource, position): boolean | Promise<boolean> {
-
-      // Extract file path from URI like: file:///pluginId/path/to/file.ts
-      // Remove leading / to get: pluginId/path/to/file.ts
-      const fullPath = resource.path.substring(1)
-      const parts = fullPath.split('/')
-      // Skip the first part (pluginId) and join the rest to get: path/to/file.ts
-      let filePath = parts.slice(1).join('/')
-
-      // If the path is a .d.ts file for a JSON module, redirect to the actual .json file
-      if (filePath.endsWith('.json.d.ts')) {
-        filePath = filePath.replace('.json.d.ts', '.json')
-      }
-
-      if (filePath) {
-        switchToFileCallback(filePath, position)
-      }
-      return false
-    }
-  })
-
   // Add command to switch between files via command palette
   editor.addAction({
     id: 'switch-file',
@@ -139,14 +142,15 @@ export async function initializeEditor(
     keybindingContext: undefined,
     contextMenuGroupId: 'navigation',
     contextMenuOrder: 1.5,
-    run: function() {
-      showFilePickerCallback()
-    }
+    run: () => actions.showFilePicker(),
   })
 
-  // Apply initial theme to UI
-  applyThemeToUI(savedTheme)
+  editor.addAction({
+    id: 'split-editor',
+    label: 'Split Editor Right',
+    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Backslash],
+    run: () => actions.splitEditor(),
+  })
 
-  updateStatus('Editor initialized', 'success')
   return editor
 }
