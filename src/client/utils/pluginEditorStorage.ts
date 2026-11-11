@@ -36,6 +36,16 @@ export interface EditorPluginData {
   lastCompiledAt: number
   /** Catalogue entry this plugin was published as, so later releases update it */
   registrySlug?: string
+  /** Public GitHub repository the plugin was imported from, and the commit last pulled */
+  github?: {
+    owner: string
+    repo: string
+    path: string
+    ref?: string
+    commit: string
+    /** Git blob id of each file at `commit`, by plugin path */
+    blobs: Record<string, string>
+  }
 }
 
 const DB_CONFIG = {

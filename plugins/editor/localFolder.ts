@@ -27,7 +27,19 @@ const STORE = 'links'
 const SKIPPED_FOLDERS = new Set(['node_modules', 'dist', 'build', 'out'])
 const MIRRORED_FILE = /\.(ts|tsx|js|jsx|mjs|cjs|json|md|txt|css|html)$/i
 const SKIPPED_FILES = new Set(['package-lock.json'])
-const MAX_FILE_SIZE = 1024 * 1024
+export const MAX_FILE_SIZE = 1024 * 1024
+
+/**
+ * Whether a plugin-relative path ("utils/math.ts") is a source file worth
+ * mirroring: not in a dot-folder or build folder, and a text file type.
+ */
+export function isMirroredPath(path: string): boolean {
+  const parts = path.split('/')
+  const name = parts[parts.length - 1]
+  if (parts.some(part => !part || part.startsWith('.'))) return false
+  if (parts.slice(0, -1).some(part => SKIPPED_FOLDERS.has(part))) return false
+  return MIRRORED_FILE.test(name) && !SKIPPED_FILES.has(name)
+}
 
 export function isFolderLinkSupported(): boolean {
   return typeof (window as unknown as { showDirectoryPicker?: unknown }).showDirectoryPicker === 'function'

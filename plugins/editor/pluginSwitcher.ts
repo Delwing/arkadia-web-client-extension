@@ -14,6 +14,7 @@ export interface PluginSwitcherOptions {
   onPick: (id: string) => void
   onNew: () => void
   onImport: () => void
+  onImportGithub: () => void
 }
 
 /** A stable per-plugin hue for its initial, so plugins are told apart at a glance. */
@@ -148,6 +149,10 @@ export function setupPluginSwitcher(options: PluginSwitcherOptions): Popover {
   document.getElementById('switcher-import-btn')!.addEventListener('click', () => {
     popover.close()
     options.onImport()
+  })
+  document.getElementById('switcher-github-btn')!.addEventListener('click', () => {
+    popover.close()
+    options.onImportGithub()
   })
 
   return popover

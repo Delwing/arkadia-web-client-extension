@@ -15,6 +15,7 @@ import {
   updatePluginScript,
 } from '@client/utils/pluginStorage'
 import { updateLocalStorageList } from './pluginManagement'
+import type { GithubLink } from './githubSource'
 
 export type BundlePlugin = (files: Record<string, PluginFile>, entryPoint: string) => Promise<string>
 
@@ -29,6 +30,10 @@ export interface FullSync {
   entryPoint: string
   files: Record<string, { path?: string; content: string; language?: string }>
   folders?: string[]
+  /** Metadata for a plugin this creates; an existing plugin keeps its own. */
+  metadata?: EditorPluginData['metadata']
+  /** New GitHub link; when absent the plugin keeps the one it has. */
+  github?: GithubLink
 }
 
 /**
@@ -105,7 +110,7 @@ export async function applyFullSync(sync: FullSync, bundlePlugin: BundlePlugin |
     files,
     folders: sync.folders || [],
     entryPoint: sync.entryPoint,
-    metadata: existingPlugin?.metadata || {
+    metadata: existingPlugin?.metadata || sync.metadata || {
       name: sync.name || 'Synced Plugin',
       version: '1.0.0',
       author: 'Dev Server',
@@ -117,6 +122,7 @@ export async function applyFullSync(sync: FullSync, bundlePlugin: BundlePlugin |
     // The IDE knows nothing of the catalogue link; dropping it would make
     // the next publish a brand new plugin instead of an update.
     ...(existingPlugin?.registrySlug ? { registrySlug: existingPlugin.registrySlug } : {}),
+    ...((sync.github ?? existingPlugin?.github) ? { github: sync.github ?? existingPlugin?.github } : {}),
   }
 
   await storeEditorPlugin(plugin)
