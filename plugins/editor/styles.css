@@ -670,8 +670,134 @@ kbd {
     box-shadow: inset 2px 0 0 var(--ed-accent);
 }
 
-.editor-tab.readonly .editor-tab__name {
+.editor-tab.readonly .editor-tab__name,
+.editor-tab.preview .editor-tab__name {
     font-style: italic;
+}
+
+/* ── Compare view: a diff in place of the editors ─────────────────────── */
+
+#editor-groups[hidden],
+#compare-view[hidden] {
+    display: none;
+}
+
+#compare-view {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--ed-ground);
+}
+
+.compare-header {
+    gap: 6px;
+    background: var(--ed-surface);
+}
+
+#compare-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    color: var(--ed-text-strong);
+    font-size: var(--fs);
+    white-space: nowrap;
+}
+
+.compare-title__dir {
+    color: var(--ed-text-faint);
+    font-size: var(--fs-sm);
+}
+
+#compare-subtitle {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ed-text-dim);
+    font-size: var(--fs-sm);
+}
+
+#app #compare-restore-btn {
+    height: 24px;
+    padding: 0 10px;
+    font-size: var(--fs-sm);
+}
+
+#app .compare-header .icon-btn {
+    width: 24px;
+    height: 24px;
+}
+
+.compare-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+}
+
+#compare-versions {
+    width: 210px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    padding: 6px;
+    background: var(--ed-surface);
+    border-right: 1px solid var(--ed-border-subtle);
+}
+
+#compare-diff {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+}
+
+#app .compare-version {
+    width: 100%;
+    height: auto;
+    padding: 6px 8px;
+    margin-bottom: 1px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--ed-text-bright);
+    text-align: left;
+}
+
+#app .compare-version:hover {
+    background: var(--ed-hover-bg);
+}
+
+#app .compare-version.selected {
+    background: var(--ed-accent-bg);
+    color: var(--ed-text-strong);
+}
+
+.compare-version__label {
+    font-size: var(--fs);
+    font-weight: 600;
+}
+
+.compare-version__time {
+    color: var(--ed-text-dim);
+    font-size: var(--fs-xs);
+}
+
+.compare-version__same {
+    padding: 0 6px;
+    border-radius: 9px;
+    background: var(--ed-control-bg);
+    color: var(--ed-text-medium);
+    font-size: var(--fs-xs);
+}
+
+.compare-empty {
+    padding: 8px;
+    color: var(--ed-text-dim);
+    font-size: var(--fs-sm);
 }
 
 .editor-tab__icon {
@@ -2474,6 +2600,33 @@ kbd {
     justify-content: center;
     border: none !important;
     border-radius: 0 !important;
+}
+
+.settings-section > label.settings-row {
+    display: flex;
+}
+
+.popover .settings-number {
+    width: 64px;
+    height: 26px;
+    padding: 0 6px;
+    border: 1px solid var(--ed-border-control);
+    border-radius: var(--radius);
+    background: var(--ed-input-bg);
+    color: var(--ed-text);
+    font-size: var(--fs-sm);
+    text-align: right;
+}
+
+.popover .settings-number:focus {
+    outline: none;
+    border-color: var(--ed-accent-border);
+}
+
+.settings-hint {
+    color: var(--ed-text-dim);
+    font-size: var(--fs-xs);
+    line-height: 1.4;
 }
 
 #font-size-value {

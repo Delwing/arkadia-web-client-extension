@@ -7,6 +7,11 @@
 export interface GroupTabs {
   tabs: string[]
   active: string | null
+  /**
+   * The group's preview tab, if any: opened by a single click and replaced
+   * by the next one, until it is edited or double-clicked.
+   */
+  preview?: string | null
 }
 
 export interface TabLayout {
@@ -21,13 +26,40 @@ export function emptyLayout(): TabLayout {
   return { groups: [{ tabs: [], active: null }], activeGroup: 0 }
 }
 
-/** Open `path` in a group (just after its active tab when new) and show it. */
-export function openTab(group: GroupTabs, path: string, index?: number) {
-  if (!group.tabs.includes(path)) {
+/**
+ * Open `path` in a group (just after its active tab when new) and show it.
+ * As a preview it takes the place of the group's preview tab; opened for
+ * good, it also keeps an open preview of the same file.
+ */
+export function openTab(group: GroupTabs, path: string, index?: number, preview = false) {
+  if (group.tabs.includes(path)) {
+    if (!preview && group.preview === path) group.preview = null
+  } else if (preview && group.preview && group.tabs.includes(group.preview)) {
+    group.tabs[group.tabs.indexOf(group.preview)] = path
+    group.preview = path
+  } else {
     const at = index ?? (group.active ? group.tabs.indexOf(group.active) + 1 : group.tabs.length)
     group.tabs.splice(Math.max(0, Math.min(at, group.tabs.length)), 0, path)
+    if (preview) group.preview = path
   }
   group.active = path
+}
+
+/** Keep a preview tab open for good. Returns whether any was a preview. */
+export function pinTab(layout: TabLayout, path: string): boolean {
+  let changed = false
+  for (const group of layout.groups) {
+    if (group.preview === path) {
+      group.preview = null
+      changed = true
+    }
+  }
+  return changed
+}
+
+/** After tabs were removed in bulk: forget a preview that is no longer open. */
+export function dropStalePreview(group: GroupTabs) {
+  if (group.preview && !group.tabs.includes(group.preview)) group.preview = null
 }
 
 /** Close `path` in a group; when it was shown, the tab to its right (else left) takes over. */
@@ -35,6 +67,7 @@ export function closeTab(group: GroupTabs, path: string) {
   const index = group.tabs.indexOf(path)
   if (index < 0) return
   group.tabs.splice(index, 1)
+  if (group.preview === path) group.preview = null
   if (group.active === path) {
     group.active = group.tabs[Math.min(index, group.tabs.length - 1)] ?? null
   }
@@ -82,6 +115,7 @@ export function renamePath(layout: TabLayout, oldPath: string, newPath: string) 
       group.tabs[index] = newPath
     }
     if (group.active === oldPath) group.active = newPath
+    if (group.preview === oldPath) group.preview = group.tabs.includes(newPath) ? newPath : null
   }
 }
 
@@ -112,7 +146,8 @@ export function sanitizeLayout(raw: unknown, exists: (path: string) => boolean):
       ? [...new Set(group.tabs.filter((p: unknown): p is string => typeof p === 'string' && exists(p)))]
       : []
     const active = typeof group?.active === 'string' && tabs.includes(group.active) ? group.active : (tabs[0] ?? null)
-    layout.groups.push({ tabs, active })
+    const preview = typeof group?.preview === 'string' && tabs.includes(group.preview) ? group.preview : null
+    layout.groups.push(preview ? { tabs, active, preview } : { tabs, active })
   }
   if (layout.groups.length === 0) return null
   if (layout.activeGroup < 0 || layout.activeGroup >= layout.groups.length) layout.activeGroup = 0

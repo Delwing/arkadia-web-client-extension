@@ -146,7 +146,9 @@ export function setupSettings(
   /** The code editors (every group's), and the others (the JS preview) that only follow the font size. */
   getEditors: () => { code: monaco.editor.IStandaloneCodeEditor[]; other: monaco.editor.IStandaloneCodeEditor[] },
   onThemeChange: (theme: string) => void,
-  onConfigureIde: () => void
+  onConfigureIde: () => void,
+  /** The local history limits changed (already saved). */
+  onHistoryLimitsChange: () => void
 ) {
   const popover = createPopover(
     document.getElementById('settings-btn')!,
@@ -159,11 +161,17 @@ export function setupSettings(
 
   const fontValue = document.getElementById('font-size-value')!
   const minimap = document.getElementById('minimap-toggle') as HTMLInputElement
+  const previewTabs = document.getElementById('preview-tabs-toggle') as HTMLInputElement
+  const historyVersions = document.getElementById('history-versions-input') as HTMLInputElement
+  const historyDays = document.getElementById('history-days-input') as HTMLInputElement
 
   const apply = () => {
     const prefs = getEditorPrefs()
     fontValue.textContent = String(prefs.fontSize)
     minimap.checked = prefs.minimap
+    previewTabs.checked = prefs.previewTabs
+    historyVersions.value = String(prefs.historyVersions)
+    historyDays.value = String(prefs.historyDays)
     const { code, other } = getEditors()
     ;[...code, ...other].forEach(editor => editor.updateOptions({ fontSize: prefs.fontSize }))
     code.forEach(editor => editor.updateOptions({ minimap: { enabled: prefs.minimap } }))
@@ -181,6 +189,23 @@ export function setupSettings(
     saveEditorPrefs({ minimap: minimap.checked })
     apply()
   })
+  previewTabs.addEventListener('change', () => saveEditorPrefs({ previewTabs: previewTabs.checked }))
+
+  // Whole numbers within the inputs' bounds; anything else puts the old value back.
+  const historyInput = (input: HTMLInputElement, key: 'historyVersions' | 'historyDays') => {
+    input.addEventListener('change', () => {
+      const value = Math.round(Number(input.value))
+      if (input.value.trim() === '' || !Number.isFinite(value)) {
+        apply()
+        return
+      }
+      saveEditorPrefs({ [key]: Math.min(Number(input.max), Math.max(Number(input.min), value)) })
+      apply()
+      onHistoryLimitsChange()
+    })
+  }
+  historyInput(historyVersions, 'historyVersions')
+  historyInput(historyDays, 'historyDays')
 
   document.getElementById('settings-ide-btn')!.addEventListener('click', () => {
     popover.close()

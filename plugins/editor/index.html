@@ -82,6 +82,25 @@
             </div>
             <div id="editor-container">
                 <div id="editor-groups"></div>
+                <div id="compare-view" hidden>
+                    <div class="panel-header compare-header">
+                        <span id="compare-title"></span>
+                        <span id="compare-subtitle"></span>
+                        <div class="spacer"></div>
+                        <button id="compare-prev-btn" class="icon-btn" title="Previous change"><svg class="icon icon--sm" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg></button>
+                        <button id="compare-next-btn" class="icon-btn" title="Next change"><svg class="icon icon--sm" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+                        <div class="problems-filter">
+                            <button class="active" data-compare-layout="side">Side by side</button>
+                            <button data-compare-layout="inline">Inline</button>
+                        </div>
+                        <button id="compare-restore-btn" title="Put this version back into the file (Ctrl+Z undoes it)">Restore</button>
+                        <button id="compare-close-btn" class="icon-btn" title="Close (Esc)"><svg class="icon" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+                    </div>
+                    <div class="compare-body">
+                        <div id="compare-versions"></div>
+                        <div id="compare-diff"></div>
+                    </div>
+                </div>
                 <div id="problems-panel" hidden>
                     <div id="problems-resizer"></div>
                     <div class="panel-header">
@@ -348,6 +367,22 @@
             <span>Minimap</span>
             <input type="checkbox" id="minimap-toggle" class="switch" />
         </label>
+        <label class="settings-section settings-row" title="A single click opens a file in a preview tab that the next click replaces; editing or double-clicking keeps it">
+            <span>Preview tabs</span>
+            <input type="checkbox" id="preview-tabs-toggle" class="switch" />
+        </label>
+        <div class="settings-section">
+            <span class="settings-label">Local history</span>
+            <label class="settings-row">
+                <span>Versions per file</span>
+                <input type="number" id="history-versions-input" class="settings-number" min="0" max="500" step="1" />
+            </label>
+            <label class="settings-row">
+                <span>Keep for days</span>
+                <input type="number" id="history-days-input" class="settings-number" min="1" max="3650" step="1" />
+            </label>
+            <span class="settings-hint">Every save keeps the files that changed, in this browser. 0 versions turns it off and drops what is kept.</span>
+        </div>
         <div class="settings-section">
             <span class="settings-label">IDE connection</span>
             <div class="settings-row">
@@ -373,6 +408,8 @@
     <!-- Context menu for file tree -->
     <div id="context-menu" class="context-menu" style="display: none;">
         <div class="context-menu-item" data-action="open-side">Open to the Side</div>
+        <div class="context-menu-item" data-action="compare">Compare with Saved</div>
+        <div class="context-menu-item" data-action="history">File History</div>
         <div class="context-menu-item" data-action="rename">Rename</div>
         <div class="context-menu-item" data-action="delete">Delete</div>
         <div class="context-menu-separator"></div>

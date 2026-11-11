@@ -1,5 +1,6 @@
 /** Whole-plugin actions: create, import, download, publish, rename, delete. */
 import {updateStatus} from './utils'
+import {deletePluginHistory} from './localHistory'
 import {bundlePlugin} from './bundler'
 import {hideNewPluginModal} from './modals'
 import {createNewPlugin, deletePlugin, downloadPlugin, uploadPlugin} from './pluginManagement'
@@ -30,6 +31,7 @@ export async function deleteCurrentPlugin() {
 
   const deletedId = state.currentPluginId
   await deletePlugin(deletedId, updateStatus)
+  await deletePluginHistory(deletedId).catch(error => console.error('[Editor] history', error))
   // The folder itself, and the files in it, stay on disk.
   await removeFolderLink(deletedId)
   closePlugin()

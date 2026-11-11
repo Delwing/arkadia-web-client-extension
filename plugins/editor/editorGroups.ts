@@ -10,10 +10,12 @@ import * as FileIcons from 'file-icons-js'
 import {
   closeTab,
   dropEmptyGroups,
+  dropStalePreview,
   emptyLayout,
   MAX_GROUPS,
   moveTab,
   openTab,
+  pinTab,
   renamePath,
   retainPaths,
   type TabLayout,
@@ -27,6 +29,8 @@ export interface EditorGroupsHooks {
   /** The shown file or the active group changed, or tabs were added, closed or moved. */
   onChange(): void
   createEditor(container: HTMLElement): monaco.editor.IStandaloneCodeEditor
+  /** More entries for a tab's context menu (compare, history). */
+  tabActions(path: string): Array<[string, () => void]>
   /** What a tab shows: the file name, and a hint (its folder) when names clash. */
   tabLabel(path: string): { name: string; detail?: string; readOnly?: boolean }
 }
@@ -215,18 +219,24 @@ export function resetLayout(next: TabLayout) {
 
 /**
  * Show `path` in a group: the active one, or 'side' for the other one
- * (opening a split when there is none).
+ * (opening a split when there is none). A `preview` takes the place of the
+ * group's preview tab instead of adding one.
  */
-export function openFile(path: string, target: 'active' | 'side' | number = 'active') {
+export function openFile(path: string, target: 'active' | 'side' | number = 'active', preview = false) {
   let index = typeof target === 'number' ? target : layout.activeGroup
   if (target === 'side') {
     if (layout.groups.length < MAX_GROUPS) layout.groups.push({ tabs: [], active: null })
     index = layout.activeGroup === 0 ? 1 : 0
   }
   index = Math.max(0, Math.min(index, layout.groups.length - 1))
-  openTab(layout.groups[index], path)
+  openTab(layout.groups[index], path, undefined, preview)
   layout.activeGroup = index
   render()
+}
+
+/** Keep a file's preview tab open for good (it was edited or double-clicked). */
+export function pin(path: string) {
+  if (pinTab(layout, path)) render()
 }
 
 /** The group showing this editor becomes the active one. */
@@ -255,6 +265,7 @@ function closeOthers(groupIndex: number, keep: string) {
   if (!group) return
   group.tabs = group.tabs.filter(p => p === keep)
   group.active = keep
+  dropStalePreview(group)
   layout.activeGroup = groupIndex
   render()
 }
@@ -265,6 +276,7 @@ function closeToRight(groupIndex: number, path: string) {
   const index = group.tabs.indexOf(path)
   const closed = group.tabs.splice(index + 1)
   if (group.active && closed.includes(group.active)) group.active = path
+  dropStalePreview(group)
   render()
 }
 
@@ -420,6 +432,10 @@ function renderTabs(view: GroupView, groupIndex: number) {
     tab.title = path
     tab.draggable = true
     if (path === group.active) tab.classList.add('active')
+    if (path === group.preview) {
+      tab.classList.add('preview')
+      tab.title = `${path} (preview: double-click to keep it open)`
+    }
     if (hooks.isModified(path)) tab.classList.add('modified')
     if (label.readOnly) tab.classList.add('readonly')
 
@@ -463,6 +479,7 @@ function renderTabs(view: GroupView, groupIndex: number) {
       render()
       view.editor.focus()
     })
+    tab.addEventListener('dblclick', () => pin(path))
     tab.addEventListener('contextmenu', (e) => {
       e.preventDefault()
       showTabMenu(e.clientX, e.clientY, groupIndex, path)
@@ -513,7 +530,10 @@ function showTabMenu(x: number, y: number, groupIndex: number, path: string) {
       ? [groupIndex === 0 ? 'Move to Right Group' : 'Move to Left Group', () => { moveTab(layout, groupIndex, path, other); render() }]
       : ['Split Right', () => { openTab(group, path); splitRight(groupIndex) }],
     ['Copy Path', () => { void navigator.clipboard?.writeText(path) }],
+    ...(group.preview === path ? [['Keep Open', () => pin(path)] as [string, () => void]] : []),
   ]
+  const extra = hooks.tabActions(path)
+  if (extra.length > 0) items.push(null, ...extra)
 
   const menu = document.createElement('div')
   menu.className = 'context-menu editor-tab-menu'

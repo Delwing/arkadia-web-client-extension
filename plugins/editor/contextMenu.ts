@@ -2,10 +2,12 @@ import type { ContextMenuTarget } from './types'
 
 let contextMenuTarget: ContextMenuTarget | null = null
 
-/** "Open to the Side" is for files only. */
+/** Entries for files only: open to the side, compare, history. */
 function setOpenSideVisible(contextMenu: HTMLElement, visible: boolean) {
-  const item = contextMenu.querySelector('[data-action="open-side"]') as HTMLElement | null
-  if (item) item.style.display = visible ? 'block' : 'none'
+  for (const action of ['open-side', 'compare', 'history']) {
+    const item = contextMenu.querySelector(`[data-action="${action}"]`) as HTMLElement | null
+    if (item) item.style.display = visible ? 'block' : 'none'
+  }
 }
 
 export function showContextMenu(x: number, y: number, filePath: string, fileName: string) {

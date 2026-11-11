@@ -26,6 +26,8 @@ import {renderWelcome, setWelcomeVisible} from './welcome'
 import {setBreadcrumb, setHeaderPlugin, setSaveState} from './chrome'
 import * as groups from './editorGroups'
 import {emptyLayout, openTab, sanitizeLayout, type TabLayout} from './tabState'
+import {moveFileHistory, recordVersions, type HistoryLimits} from './localHistory'
+import {getEditorPrefs} from './monaco/themes'
 
 /** What the open plugin tells the rest of the editor. Set once at startup. */
 export const sessionHooks = {
@@ -40,6 +42,10 @@ export const sessionHooks = {
   activeEditorChanged: (): void => {},
   /** A file's text changed (typing, the IDE, a replace). */
   contentChanged: (): void => {},
+  /** Open the compare view for a file: against the saved version, or the latest older one. */
+  compareFile: (_path: string, _start: 'saved' | 'previous'): void => {},
+  /** More entries for a tab's context menu. */
+  tabActions: (_path: string): Array<[string, () => void]> => [],
 }
 
 // Global editor state
@@ -212,7 +218,11 @@ export function renderCurrentFileTree() {
 function drawFileTree() {
   if (!state.currentPlugin) return
   renderFileTree(state.currentPlugin, state.currentFilePath, state.modifiedFiles, {
-    onFileClick: switchToFile,
+    onFileClick: (path) => switchToFile(path, undefined, 'active', true),
+    onFileDoubleClick: (path) => {
+      switchToFile(path)
+      groups.pin(path)
+    },
     onFileDelete: async (path) => {
       const success = await deleteFile(
         path,
@@ -249,6 +259,8 @@ export function createFileModel(pluginId: string, filePath: string, file: Plugin
     const content = model.getValue()
     current.content = content
     state.modifiedFiles.add(filePath)
+    // An edited preview tab stays open
+    if (!isReceivingFromIDE) groups.pin(filePath)
     renderCurrentFileTree()
     sessionHooks.contentChanged()
 
@@ -377,6 +389,7 @@ export function setupEditors(host: HTMLElement, createEditor: (container: HTMLEl
     isReadOnly: path => path === API_TYPES_TAB,
     isModified: path => state.modifiedFiles.has(path),
     tabLabel,
+    tabActions: path => sessionHooks.tabActions(path),
     createEditor,
     onChange: onGroupsChanged,
   })
@@ -386,13 +399,16 @@ export function setupEditors(host: HTMLElement, createEditor: (container: HTMLEl
 /**
  * Show a file of the open plugin (or the API typings) in the active group,
  * or with `target` 'side' in the group beside it, at `position` if given.
+ * With `preview` (a single click, a search result, a jump to a definition)
+ * it opens in the group's preview tab, when preview tabs are on.
  */
-export function switchToFile(filePath: string, position?: IPosition | IRange, target: 'active' | 'side' = 'active') {
+export function switchToFile(filePath: string, position?: IPosition | IRange, target: 'active' | 'side' = 'active', preview = false) {
   if (!state.currentPlugin || !state.currentPluginId) return
+  const asPreview = preview && getEditorPrefs().previewTabs
 
   // The API typings, under the editor's own name or the npm package's
   if (filePath === API_TYPES_TAB || filePath.startsWith("@types") || filePath.startsWith("@arkadia/")) {
-    groups.openFile(API_TYPES_TAB, target)
+    groups.openFile(API_TYPES_TAB, target, asPreview)
     revealPosition(position)
     return
   }
@@ -402,14 +418,14 @@ export function switchToFile(filePath: string, position?: IPosition | IRange, ta
     return
   }
 
-  groups.openFile(filePath, target)
+  groups.openFile(filePath, target, asPreview)
   revealPosition(position)
   updateStatus(`Editing: ${filePath}`, 'normal')
 }
 
 /** Show a file with `range` selected, as when following a search result. */
-export function revealRange(filePath: string, range: IRange) {
-  switchToFile(filePath, range)
+export function revealRange(filePath: string, range: IRange, preview = true) {
+  switchToFile(filePath, range, 'active', preview)
   const editor = groups.activeEditor()
   if (!editor || editor.getModel() !== state.editorModels.get(filePath)) return
   editor.setSelection(range)
@@ -572,11 +588,18 @@ export function renameFileWrapper(oldPath: string, newPath: string): boolean {
 
   if (success) {
     if (state.modifiedFiles.delete(oldPath)) state.modifiedFiles.add(newPath)
+    void moveFileHistory(state.currentPluginId!, oldPath, newPath).catch(error => console.error('[Editor] history', error))
     groups.renameFile(oldPath, newPath)
     renderCurrentFileTree()
   }
 
   return success
+}
+
+/** The local history's limits, from the settings. */
+export function historyLimits(): HistoryLimits {
+  const prefs = getEditorPrefs()
+  return {maxVersions: prefs.historyVersions, maxDays: prefs.historyDays}
 }
 
 /**
@@ -636,6 +659,7 @@ export async function saveCurrentPlugin(): Promise<boolean> {
     setHeaderPlugin({ name: plugin.name, language: currentPluginLanguage() })
     await reloadPluginList()
     renderCurrentFileTree()
+    void recordVersions(saved.id, saved.files, historyLimits()).catch(error => console.error('[Editor] history', error))
     await sessionHooks.saved(saved.id, saved.files)
     return true
   } catch {

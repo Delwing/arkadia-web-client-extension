@@ -25,6 +25,8 @@ import {
   loadPlugin,
   reloadPluginList,
   renderCurrentFileTree,
+  API_TYPES_TAB,
+  historyLimits,
   pluginModels,
   requestOpenPlugin,
   revealRange,
@@ -38,6 +40,9 @@ import {
 import * as groups from './editorGroups'
 import {setupProblemsPanel} from './problemsPanel'
 import {setupSearchPanel} from './searchPanel'
+import {setupCompareView} from './compareView'
+import {pruneHistory} from './localHistory'
+import {getEditorPlugin} from '@client/utils/pluginEditorStorage.ts'
 import {setupFileTreeActions} from './fileTreeActions'
 import {
   deleteCurrentPlugin,
@@ -75,9 +80,11 @@ let agentPanel: CodingAgentPanel | null = null
 let pluginSwitcher: Popover | null = null
 
 let searchPanel: ReturnType<typeof setupSearchPanel> | null = null
+let closeCompare: (() => void) | null = null
 
 sessionHooks.followPlugin = (pluginId) => {
   searchPanel?.reset()
+  closeCompare?.()
   followOpenPlugin(pluginId)
 }
 sessionHooks.pluginLoaded = (pluginId) => agentPanel?.onPluginChanged(pluginId)
@@ -132,7 +139,8 @@ function setupEventListeners() {
       other: [getJsPreviewEditor()].filter((e): e is monaco.editor.IStandaloneCodeEditor => !!e),
     }),
     (theme) => changeTheme(theme),
-    showDevServerModal
+    showDevServerModal,
+    () => { void pruneHistory(historyLimits()).catch(error => console.error('[Editor] history', error)) }
   )
 
   // Toggle agent panel
@@ -185,17 +193,39 @@ async function init() {
   await setupMonaco(updateStatus, (filePath, position, source) => {
     // A definition opens in the group it was asked from
     groups.activateEditor(source)
-    switchToFile(filePath, position)
+    switchToFile(filePath, position, 'active', true)
   })
 
   const statusBar = setupStatusBar(() => groups.activeEditor(), () => state.currentPluginId)
   const problems = setupProblemsPanel({
     getPluginId: () => state.currentPluginId,
     openLocation: (filePath, range) => {
-      switchToFile(filePath, range)
+      switchToFile(filePath, range, 'active', true)
       groups.activeEditor()?.focus()
     },
   })
+  const compare = setupCompareView({
+    getPluginId: () => state.currentPluginId,
+    getModel: (path) => state.editorModels.get(path) ?? null,
+    loadSaved: async (pluginId, path) => {
+      const stored = await getEditorPlugin(pluginId)
+      const file = stored?.files[path]
+      return file ? {content: file.content, time: stored.updatedAt} : null
+    },
+    onRestored: (path, label) => {
+      groups.pin(path)
+      updateStatus(`Restored ${label} of ${path}. Ctrl+Z undoes it; save to keep it.`, 'success')
+    },
+    onClosed: () => groups.activeEditor()?.focus(),
+  })
+  closeCompare = compare.close
+  sessionHooks.compareFile = (path, start) => { void compare.open(path, start) }
+  sessionHooks.tabActions = (path) => path === API_TYPES_TAB ? [] : [
+    ['Compare with Saved', () => sessionHooks.compareFile(path, 'saved')],
+    ['File History', () => sessionHooks.compareFile(path, 'previous')],
+  ]
+  void pruneHistory(historyLimits()).catch(error => console.error('[Editor] history', error))
+
   searchPanel = setupSearchPanel({
     getModels: pluginModels,
     openMatch: (filePath, range) => revealRange(filePath, range),
@@ -212,7 +242,14 @@ async function init() {
   }
 
   setupEditors(document.getElementById('editor-groups')!, (host) => {
-    const editor = createCodeEditor(host, { showFilePicker: showFilePickerHandler, splitEditor })
+    const editor = createCodeEditor(host, {
+      showFilePicker: showFilePickerHandler,
+      splitEditor,
+      compareWithSaved: () => {
+        const path = state.currentFilePath
+        if (path) sessionHooks.compareFile(path, 'saved')
+      },
+    })
     statusBar.watch(editor)
     return editor
   })

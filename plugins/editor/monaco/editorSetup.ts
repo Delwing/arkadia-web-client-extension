@@ -79,7 +79,7 @@ export async function setupMonaco(
 /** One code editor (an editor group's), with the editor's options and actions. */
 export function createCodeEditor(
   container: HTMLElement,
-  actions: { showFilePicker: () => void; splitEditor: () => void }
+  actions: { showFilePicker: () => void; splitEditor: () => void; compareWithSaved: () => void }
 ): monaco.editor.IStandaloneCodeEditor {
   const editor = monaco.editor.create(container, {
     model: null,
@@ -143,6 +143,14 @@ export function createCodeEditor(
     contextMenuGroupId: 'navigation',
     contextMenuOrder: 1.5,
     run: () => actions.showFilePicker(),
+  })
+
+  editor.addAction({
+    id: 'compare-with-saved',
+    label: 'Compare with Saved',
+    contextMenuGroupId: 'navigation',
+    contextMenuOrder: 1.6,
+    run: () => actions.compareWithSaved(),
   })
 
   editor.addAction({

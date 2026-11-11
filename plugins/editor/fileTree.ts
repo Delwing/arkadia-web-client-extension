@@ -72,6 +72,8 @@ export function renderTreeNode(
   modifiedFiles: Set<string>,
   callbacks: {
     onFileClick: (path: string) => void
+    /** Opens the file for good, rather than as a preview. */
+    onFileDoubleClick: (path: string) => void
     onFileDelete: (path: string) => void
     onFolderContextMenu: (x: number, y: number, path: string) => void
     onFileContextMenu: (x: number, y: number, path: string, name: string) => void
@@ -238,6 +240,9 @@ export function renderTreeNode(
         callbacks.onFileClick(node.path)
       }
     }
+    fileItem.ondblclick = () => {
+      if (!isDragging) callbacks.onFileDoubleClick(node.path)
+    }
 
     // Drag and drop support
     fileItem.ondragstart = (e) => {
@@ -273,6 +278,8 @@ export function renderFileTree(
   modifiedFiles: Set<string>,
   callbacks: {
     onFileClick: (path: string) => void
+    /** Opens the file for good, rather than as a preview. */
+    onFileDoubleClick: (path: string) => void
     onFileDelete: (path: string) => void
     onFolderContextMenu: (x: number, y: number, path: string) => void
     onFileContextMenu: (x: number, y: number, path: string, name: string) => void

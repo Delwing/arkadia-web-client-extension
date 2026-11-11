@@ -5,6 +5,7 @@ import {
   emptyLayout,
   moveTab,
   openTab,
+  pinTab,
   renamePath,
   retainPaths,
   sanitizeLayout,
@@ -123,5 +124,55 @@ describe('sanitizeLayout', () => {
       activeGroup: 7,
     }, exists)
     expect(layout).toEqual({groups: [{tabs: ['a'], active: 'a'}, {tabs: ['b'], active: 'b'}], activeGroup: 0})
+  })
+})
+
+describe('preview tabs', () => {
+  it('a preview takes the place of the last preview', () => {
+    const group = {tabs: ['a'], active: 'a', preview: null as string | null}
+    openTab(group, 'b', undefined, true)
+    expect(group).toEqual({tabs: ['a', 'b'], active: 'b', preview: 'b'})
+    openTab(group, 'c', undefined, true)
+    expect(group).toEqual({tabs: ['a', 'c'], active: 'c', preview: 'c'})
+  })
+
+  it('previewing an open file only shows it', () => {
+    const group = {tabs: ['a', 'b'], active: 'b', preview: 'b'}
+    openTab(group, 'a', undefined, true)
+    expect(group).toEqual({tabs: ['a', 'b'], active: 'a', preview: 'b'})
+  })
+
+  it('opening the previewed file for good keeps it', () => {
+    const group = {tabs: ['a', 'b'], active: 'a', preview: 'b'}
+    openTab(group, 'b')
+    expect(group).toEqual({tabs: ['a', 'b'], active: 'b', preview: null})
+    openTab(group, 'c', undefined, true)
+    expect(group.tabs).toEqual(['a', 'b', 'c'])
+  })
+
+  it('pinning ends the preview', () => {
+    const layout: TabLayout = {groups: [{tabs: ['a'], active: 'a', preview: 'a'}], activeGroup: 0}
+    expect(pinTab(layout, 'a')).toBe(true)
+    expect(layout.groups[0].preview).toBeNull()
+    expect(pinTab(layout, 'a')).toBe(false)
+  })
+
+  it('closing, renaming and moving follow the preview', () => {
+    const group = {tabs: ['a', 'b'], active: 'b', preview: 'b'}
+    closeTab(group, 'b')
+    expect(group.preview).toBeNull()
+
+    const layout: TabLayout = {groups: [{tabs: ['a', 'b'], active: 'b', preview: 'b'}, {tabs: ['c'], active: 'c'}], activeGroup: 0}
+    renamePath(layout, 'b', 'lib/b')
+    expect(layout.groups[0].preview).toBe('lib/b')
+    moveTab(layout, 0, 'lib/b', 1)
+    expect(layout.groups[0].preview).toBeNull()
+    expect(layout.groups[1].preview).toBeUndefined()
+  })
+
+  it('a stored preview survives only when its tab does', () => {
+    const exists = () => true
+    expect(sanitizeLayout({groups: [{tabs: ['a', 'b'], active: 'a', preview: 'b'}]}, exists)?.groups[0].preview).toBe('b')
+    expect(sanitizeLayout({groups: [{tabs: ['a'], active: 'a', preview: 'x'}]}, exists)?.groups[0].preview).toBeUndefined()
   })
 })

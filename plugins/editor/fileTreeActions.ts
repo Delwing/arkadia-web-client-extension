@@ -5,7 +5,7 @@ import {clearContextMenuTarget, getContextMenuTarget, hideContextMenu, showRootC
 import {createFileInline, createFolderInline, deleteFile, deleteFolder} from './fileOperations'
 import {hideNewFileModal, showNewFileModal} from './modals'
 import {alertDialog} from './dialogs'
-import {moveFileToDirectoryWrapper, renameFileWrapper, renderCurrentFileTree, state, switchToFile} from './session'
+import {moveFileToDirectoryWrapper, renameFileWrapper, renderCurrentFileTree, sessionHooks, state, switchToFile} from './session'
 
 // Rename UI handling
 function startRename(filePath: string) {
@@ -317,6 +317,12 @@ export async function handleContextMenuAction(action: string) {
       break
     case 'open-side':
       if (!target.isFolder) switchToFile(target.path, undefined, 'side')
+      break
+    case 'compare':
+      if (!target.isFolder) sessionHooks.compareFile(target.path, 'saved')
+      break
+    case 'history':
+      if (!target.isFolder) sessionHooks.compareFile(target.path, 'previous')
       break
     case 'new-file':
       if (target.isFolder || target.path === '') {
