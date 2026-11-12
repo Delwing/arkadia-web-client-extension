@@ -1,4 +1,4 @@
-import { getStrategy } from '@web/objectList/strategies';
+import { getStrategy } from '@web/objectList/strategies/index.ts';
 import { buildRenderContext } from '@web/objectList/context';
 import { setRenderSettings } from '@modules/core/settings';
 

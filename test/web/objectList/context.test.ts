@@ -1,4 +1,4 @@
-import { getStrategy } from '@web/objectList/strategies';
+import { getStrategy } from '@web/objectList/strategies/index.ts';
 import { buildRenderContext, scopeRenderContext } from '@web/objectList/context';
 
 function makeClient(team: string[], queue: number[] = []) {

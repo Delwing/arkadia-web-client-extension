@@ -1,4 +1,4 @@
-import { getStrategy } from '@web/objectList/strategies';
+import { getStrategy } from '@web/objectList/strategies/index.ts';
 import { buildRenderContext } from '@web/objectList/context';
 import { objectListFilters } from '@modules/core/objectListFilters';
 import { resetLayoutCache, setBuiltInPanelSetting } from '@web/layout/utils/layoutStorage';

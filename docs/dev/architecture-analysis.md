@@ -6,7 +6,8 @@
 >
 > **Originally written 2026-05-30, re-verified 2026-07-27 and again against master on
 > 2026-10-31; the Tier 1 splits landed 2026-11-05; re-measured and the layering pass
-> landed 2026-11-08; `Keys.tsx` split 2026-11-10.** Re-measure before citing a number.
+> landed 2026-11-08; `Keys.tsx` split 2026-11-10; plugin editor and `objectList/strategies.ts`
+recorded, sizes re-measured 2026-11-12.** Re-measure before citing a number.
 
 ## Progress since the original review
 
@@ -30,6 +31,8 @@
 | `@modules → @web` (not in the original review) | **Done** (2026-11-08). `contextMenus.ts` (room/herb menus) was web UI in `@modules/core`: now `src/web/gameContextMenus.ts`, and the six client scripts that opened those menus call `UiPort.showHerbMenu` / `showRoomMenu`. `triggerSettingsReload` / `applyImportedDeviceSettings` → `src/web/deviceSettingsReload.ts`; the unused `deviceSettingsBundle.ts` deleted; two settings migrations take their web pieces as loaders from the bootstrap. Only sync v1 still `import()`s `@web/options/export` (a listed lint exception until stage 5b). |
 | `@shared → @client` reverse dependency (Tier 4), and `@modules → @client` (~20 runtime imports, not in the original review) | **Done** (2026-11-08). Moved down: `dataCache`, `wiedzaLoader` → `@modules/data`; default attack/draw/support commands → `@modules/core`; `stripPolishCharacters`, `knowledgeCategories`, `types/letter` → `@shared`. Moved up: `Colors.ts` → `@client` (≈100 client importers); `proposalValidator` → `@web/assistant` (web-only); `outputMessageHandler`, `outputText` → `@web/output`. `clientEvents.ts` now type-imports its client payload types. ESLint forbids runtime upward imports for all three lower layers (static and `import()`; type-only imports allowed). |
 | `src/web/keys/Keys.tsx` — 1,665 lines | **Done** (2026-11-10). Six jobs in one component: storage (keymaps, debounced saves, helper re-registration), the edit rules (assign a key, "gdzie działa", twins, own shortcuts), key capture (page or helper listening), the helper's status, measuring, and the render for four width steps. Now: `keyEdits.ts`, pure functions that return what an edit changes (unit-tested in `test/web/keys/keyEdits.test.ts`); hooks `useKeymapStore`, `useHelperStatus`, `useKeyCapture`, `useKeysSize`; components `KeyboardView`, `KeyDetail`, `KeysToolbar`, `CaptureOverlays` and one per list in `sections/`, sharing state through `KeysContext`. `Keys.tsx` is a ~440-line composer that owns the view state and the four layouts. Fixed on the way: an own shortcut moved to a key the browser keeps left its helper twin behind on the old key, and a built-in bind refused such a key still moved its twin. |
+| `plugins/editor/main.ts` (2,135) and `monacoSetup.ts` (1,940) | **Done** (`b5e9848`). `main.ts` is a bootstrap (~290 lines now) over `session` (the open plugin, its models, load/switch/save/close, reaching the rest through `sessionHooks`), `fileTreeActions`, `pluginActions`, `jsPreview`, `filePicker`, `devServerUi`, `folderLink` and `panelResizers` (three copy-pasted resizers → one helper). `monacoSetup.ts` is gone: `plugins/editor/monaco/` holds `editorSetup`, `themes`, `typings`, `importAnalysis` (unit-tested), `autoImportCompletion`, `importPathCompletion`, `moduleNames`. Fixed on the way: wrong auto-import paths across folders, a dropped default import, the ~7,000-line API typings re-parsed on every completion, stale JSON typings after a rename. Largest file now `session.ts` (~670, grown since with tabs and split view); `codingAgentPanel.ts` (1,081) was not part of it. |
+| `src/web/objectList/strategies.ts` — 1,004 lines | **Done** (2026-11-12). `src/web/objectList/strategies/`: one file per view mode (`list` with the exported `renderListLines` the PiP window uses, `card`, `compact`, `compactDots`, `raid`, `nearby`), the `ObjectListStrategy` interface in `types.ts`, and the `STRATEGIES` registry / `getStrategy` in `index.ts`. Moved verbatim, no behaviour change; largest `list.ts` (~200). The split shows the duplication: `compact` and `compactDots` differ in ~35 of ~155 lines, and `card` shares most of its row-building with both (see Tier 2). |
 
 ## The shape of the problem
 
@@ -53,20 +56,18 @@ to follow elsewhere.**
 
 ## Tier 1 — God files (break these up first)
 
-Line counts as of 2026-11-08 (`Keys.tsx` since split, see the progress table). The six files of the 2026-10-31 list are done except
-`firebaseUnifiedSync.ts` (see the progress table); what is left is the next-largest files.
-Only the two carried-over rows have had a jobs-per-file read yet.
+Line counts as of 2026-11-12. The six files of the 2026-10-31 list are done except
+`firebaseUnifiedSync.ts`, and so are `Keys.tsx`, the plugin editor and `objectList/strategies.ts`
+(see the progress table); what is left is the next-largest files. Only `firebaseUnifiedSync.ts`
+has had a jobs-per-file read yet.
 
 | File | Lines | Distinct jobs crammed in | Split into |
 |---|---|---|---|
-| `plugins/editor/main.ts` | 2,135 | to be analysed (the largest file in the repo; was missing from this list) | to be analysed |
-| `plugins/editor/monacoSetup.ts` | 1,940 | to be analysed (missing from this list too) | to be analysed |
 | `src/web/assistant/proposalValidator.ts` | 1,385 | to be analysed (moved from `@modules/core/assistant` 2026-11-08) | to be analysed |
 | `src/modules/firebase/firebaseUnifiedSync.ts` | 1,376 | document I/O + category sync + device registry + sync groups + conflict resolution | Mostly the v1 single-document sync — most of it goes when v1 is removed (`docs/dev/SYNC_V2_PLAN.md`, stage 5b); the device registry stays |
 | `src/client/scripts/inventory.ts` | 1,276 | to be analysed | to be analysed |
 | `src/web/herbs/HerbManager.tsx` | 1,209 | to be analysed | to be analysed |
 | `src/client/scripts/raonLabyrinthMapper.ts` | 1,186 | to be analysed | to be analysed |
-| `src/web/objectList/strategies.ts` | 1,004 | all six view-mode renderers in one file (the `ObjectList.ts` split left them as they were) | one file per view mode (`list`, `card`, `compact`, `compact-dots`, `raid`, `nearby`) behind the `STRATEGIES` registry |
 
 `AnsiAwareBuffer.ts` (1,255) is deliberately not listed: it is one plugin-facing class
 whose methods are the API.
@@ -75,7 +76,8 @@ Next in size, not yet read: `MudClient.ts` (1,164), `transportTracker.ts` (1,118
 `plugins/editor/codingAgentPanel.ts` (1,081), `StaticMapPopup.tsx` (1,071),
 `LogViewer.tsx` (1,051), `oswajanie.ts` (1,031), `WindowManager.ts` (1,030), `clock.ts` (1,027).
 
-**Highest leverage:** the plugin editor (`main.ts`, `monacoSetup.ts`) — the two largest files left.
+**Highest leverage:** `proposalValidator.ts` and `inventory.ts` — the two largest files left that
+nobody has read for jobs yet. `firebaseUnifiedSync.ts` is larger but mostly goes with sync v1.
 
 ---
 
@@ -101,6 +103,13 @@ Window chrome is shared, but *content* isn't:
 `weaponEvaluation`, `armorEvaluation`, `parryShieldEvaluation`, `priceEvaluation`, the
 self evaluator and `stoneValue` all follow parse → classify → format-colored →
 register-trigger. Same skeleton, ~200 lines each.
+
+**3a. Object-list card renderers**
+Now that each view mode has its own file (`src/web/objectList/strategies/`), `card`,
+`compact` and `compactDots` visibly repeat the same per-object work (number label, leader
+mark, attack/queue state, filter style, cover mark) around different markup;
+`compact` vs `compactDots` differ only in the HP display. One `buildCardModel(obj, ctx)`
+plus a per-mode template would remove most of it.
 
 **4. Button-settings files**
 `desktopButtonSettings.ts` `parseDesktopSteps` and `mobileButtonSettings.ts`
@@ -172,7 +181,9 @@ Co-locating related files is what makes the Tier-2 duplication visible and fixab
 1. ~~Split `PluginApi.ts` by domain~~ and ~~`knowledge.ts`~~ — both done 2026-10-31; ~~the Tier 1 splits (`MapHelper`, `FormatState`, `exportUtils`, `ObjectList`, `FirebaseTab`)~~ — done 2026-11-05.
 2. ~~**Close the layering leaks**~~ — done 2026-11-08 (`HostPort`, `@modules`/`@shared` upward imports, ESLint rules).
 3. **Remove sync v1** — takes most of `firebaseUnifiedSync.ts` with it, and the last lint exception. Check Firestore first.
-4. **Analyse and split the remaining Tier 1 files** — ~~`Keys.tsx`~~ done 2026-11-10; next the plugin editor.
+   Not before ~2026-12-01: v2 became the default ~2026-11-01 and the plan keeps v1 for a one-month transition.
+4. **Analyse and split the remaining Tier 1 files** — ~~`Keys.tsx`~~ done 2026-11-10; ~~plugin editor~~
+   and ~~`objectList/strategies.ts`~~ done; next read `proposalValidator.ts` and `inventory.ts`.
 5. **Finish `BaseCounter`** — migrate `herbCounter`, `whoCount` and `przybywajaCount`.
 6. **Folder reorganization** of `scripts/` and web popups — makes remaining duplication self-evident. One domain at a time: it churns imports.
 

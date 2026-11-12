@@ -12,7 +12,7 @@ import eventBus from "@modules/core/eventBus";
 import {getBuiltInPanelSetting, loadLayoutState, subscribeToPanelSetting} from "../layout/utils/layoutStorage";
 import {LEADER_MARK_SETTING, SEPARATE_OTHERS_SETTING} from "../layout/types";
 import {buildRenderContext, scopeRenderContext, type ObjectListViewMode, type RenderContext} from "./context.ts";
-import {getStrategy, renderListLines} from "./strategies.ts";
+import {getStrategy, renderListLines} from "./strategies/index.ts";
 import {ObjectListEventHandlers} from "./ObjectListEventHandlers.ts";
 import {ObjectListDrag} from "./objectListDrag.ts";
 import {PictureInPictureSync} from "./pip/PictureInPictureSync.ts";
