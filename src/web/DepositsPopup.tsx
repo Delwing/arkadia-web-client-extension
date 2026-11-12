@@ -4,6 +4,7 @@ import { usePopup } from './hooks/usePopup';
 import { usePopupData } from './hooks/usePopupData';
 import { getDepositsData, getTotalCopper, type DepositInfo } from '@client/scripts/deposits';
 import { splitCurrency } from '@client/scripts/priceEvaluation';
+import { CoinIcon } from './CoinIcon';
 import { getTransformDefinitions, type ContainerItem } from '@client/scripts/prettyContainers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { HeaderButton } from '@web-ui/primitives';
@@ -158,10 +159,10 @@ const DepositsPopup: React.FC = () => {
                     {(() => {
                         const c = splitCurrency(totalCopper);
                         return <>
-                            {c.mithril > 0 && <span className="deposits-popup__coin--mithril">{c.mithril}m</span>}
-                            {c.gold > 0 && <span className="deposits-popup__coin--gold">{c.gold}g</span>}
-                            {c.silver > 0 && <span className="deposits-popup__coin--silver">{c.silver}s</span>}
-                            {c.copper > 0 && <span className="deposits-popup__coin--copper">{c.copper}c</span>}
+                            {c.mithril > 0 && <span className="deposits-popup__coin deposits-popup__coin--mithril"><CoinIcon metal="mithril" />{c.mithril}m</span>}
+                            {c.gold > 0 && <span className="deposits-popup__coin deposits-popup__coin--gold"><CoinIcon metal="gold" />{c.gold}g</span>}
+                            {c.silver > 0 && <span className="deposits-popup__coin deposits-popup__coin--silver"><CoinIcon metal="silver" />{c.silver}s</span>}
+                            {c.copper > 0 && <span className="deposits-popup__coin deposits-popup__coin--copper"><CoinIcon metal="copper" />{c.copper}c</span>}
                         </>;
                     })()}
                 </div>

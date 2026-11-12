@@ -6,6 +6,7 @@ import {CircleHelp} from "lucide-react";
 import {defaultSettings} from "./defaultSettings";
 import type {SunAnnouncement} from "@modules/core/defaultSettings";
 import {CollectOverridesModal} from "./CollectOverridesModal";
+import {CoinIcon} from "@web/CoinIcon.tsx";
 import type {GeneralSettingsSectionProps} from "./useGeneralSettingsForm";
 
 const collectModeOptions = [
@@ -371,19 +372,19 @@ export function CollectSection({settings, onChangeSetting}: GeneralSettingsSecti
                     <div className="settings-checks">
                         <Check
                             id="collectCopper"
-                            label="Miedziane monety"
+                            label={<span className="settings-coin-label"><CoinIcon metal="copper" />Miedziane monety</span>}
                             checked={settings.collectCopper}
                             onChange={e => onChangeSetting(s => s.collectCopper = e.target.checked)}
                         />
                         <Check
                             id="collectSilver"
-                            label="Srebrne monety"
+                            label={<span className="settings-coin-label"><CoinIcon metal="silver" />Srebrne monety</span>}
                             checked={settings.collectSilver}
                             onChange={e => onChangeSetting(s => s.collectSilver = e.target.checked)}
                         />
                         <Check
                             id="collectGold"
-                            label="Złote monety"
+                            label={<span className="settings-coin-label"><CoinIcon metal="gold" />Złote monety</span>}
                             checked={settings.collectGold}
                             onChange={e => onChangeSetting(s => s.collectGold = e.target.checked)}
                         />
