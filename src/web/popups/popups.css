@@ -5168,6 +5168,14 @@ select.popup-input optgroup {
   gap: 0.5rem;
 }
 
+.deposits-popup__coin {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+}
+
+.coin-icon { flex-shrink: 0; vertical-align: -0.125em; }
+
 .deposits-popup__coin--mithril { color: #afeeee; }
 .deposits-popup__coin--gold { color: #ffd700; }
 .deposits-popup__coin--silver { color: #dadada; }

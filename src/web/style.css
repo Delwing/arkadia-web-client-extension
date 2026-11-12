@@ -2684,6 +2684,12 @@ span.import-source__icon > svg {
   max-width: 16rem;
 }
 /* A list of checkboxes / radios. */
+.settings-coin-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
 .settings-checks {
   display: flex;
   flex-direction: column;
