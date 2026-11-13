@@ -145,7 +145,8 @@ yarn test:e2e -- --shard=1/12              # Run one CI shard
 ### HTML/Components
 - The stock UI is one React tree: `index.html`'s body is only `<div id="root">`, and `src/web/app/App.tsx` renders the page (`app/shell/Shell.tsx`) and its overlays (`app/Overlays.tsx`). Add page markup to the component that owns that region, never to `index.html`
 - Don't portal into placeholder elements; portals are for things that render into `document.body` (menus, overlays). Give each new region an `ErrorBoundary`
-- Elements whose contents belong to an engine (the map's `#map`, the object lists) are `MovableHost`s (`src/web/layout/movableHost.ts`), created in code; never render them with React or move them by hand
+- UI is React: new UI is a component, and markup built as HTML strings (`innerHTML`, template literals) is legacy to convert when you touch it, as the object lists were (`src/web/objectList/views/`). Only HTML from outside (game output, plugin-supplied markup) goes in as HTML, through `dangerouslySetInnerHTML`
+- Elements that must survive being moved between places (the map's `#map`, the object lists) are `MovableHost`s (`src/web/layout/movableHost.ts`): the host element is created in code and moved only by its slots, never rendered by a parent React tree or moved by hand. What is inside it may be its own React root (the object lists mount one with `createRoot`); the map's is the map engine's
 - Do not use `aria-*` attributes (not needed in this project)
 
 ### Regular Expressions

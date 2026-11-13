@@ -1,14 +1,14 @@
-// Shared render context + helpers for the object-list view strategies.
+// Shared render context + helpers for the object-list views.
 //
 // Every flavor (list / card / compact / compact-dots / raid / nearby) renders the
 // SAME object set with the SAME derived facts — who's a teammate, who's the next
 // queued enemy, whether the team is attacking, the leader flag. Historically each
-// render method recomputed all of that inline; the strategy seam hoists it here
-// once (`buildRenderContext`) and each strategy consumes it, so the shell just
-// builds the context and delegates to the active strategy.
+// render method recomputed all of that inline; it is worked out here once
+// (`buildRenderContext`) and every view reads it, so the shell just builds the
+// context and renders the active view.
 //
-// The per-row markup still lives in each strategy (they diverge wildly): this is
-// only the context that is genuinely identical across flavors.
+// The per-row markup lives in each view (views/): this is only the context
+// that is genuinely identical across them.
 
 import type Client from "@client/Client";
 import {getCoverTracker} from "@client/scripts/coverTracker.ts";
@@ -191,21 +191,8 @@ export function buildCoverMarks(client: Client, objects: any[], tm: any): Map<nu
     return marks;
 }
 
-const COVER_SHIELD_PATH = 'M12 2.5 4 5.5v6c0 5 3.4 8.8 8 10 4.6-1.2 8-5 8-10v-6z';
-
 /** Class for the name element of a marked enemy ('' when unmarked). */
 export function coverNameClass(obj: any, ctx: RenderContext): string {
     const mark = ctx.coverMarks.get(obj.num);
     return mark ? `is-covered-${mark.kind}` : '';
-}
-
-/**
- * The name content with the shield after it. The text gets its own span so card
- * names keep their ellipsis on the text and the shield never gets clipped.
- */
-export function withCoverMark(obj: any, ctx: RenderContext, nameHtml: string): string {
-    const mark = ctx.coverMarks.get(obj.num);
-    if (!mark) return nameHtml;
-    const title = `Zasłonięty przed: ${mark.blocked.join(', ')}`;
-    return `<span class="cover-name">${nameHtml}</span><svg class="cover-mark cover-mark--${mark.kind}" viewBox="0 0 24 24"><title>${title}</title><path d="${COVER_SHIELD_PATH}"/></svg>`;
 }

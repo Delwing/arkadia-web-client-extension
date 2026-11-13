@@ -120,7 +120,7 @@ export default function initLastSeen(
     }
 
     function buildHpBar(hp: number): AnsiAwareBuffer {
-        // Match the object list (web/objectList/strategies.ts): clamp 0..6, +1 → 1..7 filled segments, total width 7.
+        // Match the object list (web/objectList/views/): clamp 0..6, +1 → 1..7 filled segments, total width 7.
         const filled = Math.max(0, Math.min(BAR_WIDTH - 1, Math.floor(hp))) + 1;
         const empty = BAR_WIDTH - filled;
         let color = BAR_SUCCESS;

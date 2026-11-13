@@ -1,4 +1,4 @@
-import { getStrategy } from '@web/objectList/strategies';
+import { renderView } from './renderView';
 import { buildRenderContext } from '@web/objectList/context';
 import { objectListFilters } from '@modules/core/objectListFilters';
 import { resetLayoutCache, setBuiltInPanelSetting } from '@web/layout/utils/layoutStorage';
@@ -17,7 +17,7 @@ function makeClient(opts: { queue?: number[]; team?: string[]; leader?: boolean 
 
 function renderNearby(objects: any[], client = makeClient()) {
   const ctx = buildRenderContext(client, objects, 'zabij');
-  return getStrategy('nearby').render(ctx);
+  return renderView('nearby', ctx).innerHTML;
 }
 
 describe('nearby ("W poblizu") strategy', () => {
@@ -165,7 +165,7 @@ describe('team leader crown', () => {
     { shortcut: '1', desc: 'Ork', num: 3, hp: 4 },
   ];
 
-  function render(mode: Parameters<typeof getStrategy>[0], leaderId: number) {
+  function render(mode: Parameters<typeof renderView>[0], leaderId: number) {
     const client = {
       TeamManager: {
         isInTeam: (desc: string) => desc === 'Kompan',
@@ -174,7 +174,7 @@ describe('team leader crown', () => {
         getLeaderId: () => leaderId,
       },
     } as any;
-    document.body.innerHTML = getStrategy(mode).render(buildRenderContext(client, objects, 'zabij'));
+    renderView(mode, buildRenderContext(client, objects, 'zabij'));
     return [...document.querySelectorAll('.is-team-leader')] as HTMLElement[];
   }
 
@@ -201,5 +201,27 @@ describe('team leader crown', () => {
     setBuiltInPanelSetting('objectList', LEADER_MARK_SETTING, false);
     expect(render('list', 2)).toHaveLength(0);
     expect(render('card', 2)).toHaveLength(0);
+  });
+});
+
+describe('game text', () => {
+  test.each(['list', 'card', 'compact', 'compact-dots', 'raid', 'nearby'] as const)(
+    '%s shows a description as text, never as markup', (mode) => {
+      const client = { TeamManager: { isInTeam: () => false, getEnemyQueue: () => [], isLeader: () => false } } as any;
+      const root = renderView(mode, buildRenderContext(client, [{ shortcut: '1', desc: 'Ork <b>wielki</b>', num: 1, hp: 4 }], 'zabij'));
+      expect(root.querySelector('b')).toBeNull();
+      expect(root.textContent).toContain('Ork <b>wielki</b>');
+    });
+
+  test('plugin prefix and suffix stay HTML around the escaped description', () => {
+    objectListFilters.register('test-html', (_ctx, result) => {
+      result.style.prefix = '<em>!</em>';
+    });
+    const client = { TeamManager: { isInTeam: () => false, getEnemyQueue: () => [], isLeader: () => false } } as any;
+    const root = renderView('card', buildRenderContext(client, [{ shortcut: '1', desc: 'A & <B>', num: 1, hp: 4 }], 'zabij'));
+    const name = root.querySelector('.object-card__name')!;
+    expect(name.querySelector('em')?.textContent).toBe('!');
+    expect(name.textContent).toBe('!A & <B>');
+    objectListFilters.clear();
   });
 });

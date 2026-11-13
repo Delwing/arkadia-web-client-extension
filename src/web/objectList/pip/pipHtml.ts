@@ -1,49 +1,5 @@
-// Markup of the Picture-in-Picture window: a status header (location, cover
-// timer), the list itself and a footer with the game's last output lines.
-
-export interface PipHtmlParts {
-    locationText: string;
-    coverTimerText: string;
-    bodyLines: string[];
-    lastOutputHtml: string;
-}
-
-export function buildPipHtml({locationText, coverTimerText, bodyLines, lastOutputHtml}: PipHtmlParts): string {
-    const header = buildPipHeaderHtml(locationText, coverTimerText);
-    const footer = buildPipFooterHtml(lastOutputHtml);
-    const body = `<div class="objects-list-pip-body">${bodyLines.join("<br>")}</div>`;
-    const parts = [] as string[];
-    if (header) {
-        parts.push(header);
-    }
-    parts.push(body);
-    if (footer) {
-        parts.push(footer);
-    }
-    return parts.join("");
-}
-
-function buildPipHeaderHtml(locationText: string, coverTimerText: string) {
-    const parts = [] as string[];
-    if (locationText) {
-        parts.push(escapeHtml(locationText));
-    }
-    if (coverTimerText) {
-        parts.push(escapeHtml(coverTimerText));
-    }
-    if (!parts.length) {
-        return "";
-    }
-    const content = parts.join("&nbsp;&bull;&nbsp;");
-    return `<div class="objects-list-pip-header">${content}</div>`;
-}
-
-function buildPipFooterHtml(lastOutputHtml: string) {
-    if (!lastOutputHtml) {
-        return "";
-    }
-    return `<div class="objects-list-pip-footer"><div class="objects-list-pip-footer-content">${lastOutputHtml}</div></div>`;
-}
+// Splitting the game's output HTML into lines, for the Picture-in-Picture
+// window's footer.
 
 /**
  * Splits an output message's HTML at its line breaks (`<br>` or newline),
@@ -89,15 +45,4 @@ export function splitOutputHtmlIntoLines(html: string): string[] {
         lines.push(line);
     }
     return lines;
-}
-
-function escapeHtml(text: string) {
-    const map: Record<string, string> = {
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;",
-    };
-    return text.replace(/[&<>"']/g, (char) => map[char] || char);
 }
