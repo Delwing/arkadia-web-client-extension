@@ -87,9 +87,10 @@ export class ObjectListEventHandlers {
     };
 
     /**
-     * In combat the list re-renders on nearly every hit, so the element pressed
-     * is often swapped out before the button is released - and then the browser
-     * fires no click at all, so a dot or HP bar click is silently lost. When the
+     * In combat the list re-renders on nearly every hit. React keeps an
+     * object's elements across renders, but one can still be replaced under the
+     * press (its row changes shape, the view switches), and then the browser
+     * fires no click at all, so a dot or HP bar click would be lost. When the
      * release lands on the same object in the fresh render, treat it as the click.
      */
     onMouseUp = (e: MouseEvent) => {
@@ -384,24 +385,6 @@ export class ObjectListEventHandlers {
     }
 
     /** Capture-phase listener for each `.objects-list-cards` container of the card-family flavors. */
-    onCardContextMenu = (e: MouseEvent) => {
-        const target = e.target as HTMLElement | null;
-        if (!target) return;
-
-        const cardEl = target.closest('.object-card') as HTMLElement | null;
-        if (!cardEl) return;
-
-        const objectId = cardEl.getAttribute('data-object-id');
-        if (!objectId) return;
-
-        if (this.contextMenuCommands.length === 0) return;
-
-        e.preventDefault();
-        e.stopPropagation();
-
-        this.showObjectMenu(objectId, e.clientX, e.clientY);
-    };
-
     /** Capture-phase listener on the document, for the card-family flavors. */
     onDocumentContextMenu = (e: MouseEvent) => {
         // list + nearby use the delegated onContextMenu (row data-object-id);

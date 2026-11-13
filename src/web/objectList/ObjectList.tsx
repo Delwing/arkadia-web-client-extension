@@ -1,9 +1,11 @@
 // The object lists ("Kondycje" and its non-team window): keeps them rendered
-// from the client's objects in the chosen view flavor. The pieces it wires
-// together each live in their own file: the view flavors (strategies.ts), the
+// from the client's objects in the chosen view. The pieces it wires together
+// each live in their own file: the views (views/, one React component each), the
 // mouse handling (ObjectListEventHandlers.ts), dragging the floating window
 // (objectListDrag.ts) and the Picture-in-Picture copy (pip/).
 
+import {flushSync} from "react-dom";
+import {createRoot, type Root} from "react-dom/client";
 import Client from "@client/Client";
 import {globalStorage} from "@modules/core/storage";
 import {onBehaviorSettingsChange, onRenderSettingsChange} from "@modules/core/settings";
@@ -12,12 +14,10 @@ import eventBus from "@modules/core/eventBus";
 import {getBuiltInPanelSetting, loadLayoutState, subscribeToPanelSetting} from "../layout/utils/layoutStorage";
 import {LEADER_MARK_SETTING, SEPARATE_OTHERS_SETTING} from "../layout/types";
 import {buildRenderContext, scopeRenderContext, type ObjectListViewMode, type RenderContext} from "./context.ts";
-import {getStrategy, renderListLines} from "./strategies/index.ts";
+import {ObjectListView} from "./views/index.tsx";
 import {ObjectListEventHandlers} from "./ObjectListEventHandlers.ts";
 import {ObjectListDrag} from "./objectListDrag.ts";
-import {PictureInPictureSync} from "./pip/PictureInPictureSync.ts";
-
-const EMPTY_HTML = '<span style="color: #888; font-style: italic;">Brak obiektów</span>';
+import {PictureInPictureSync} from "./pip/PictureInPictureSync.tsx";
 
 export default class ObjectList {
     private client: Client;
@@ -26,6 +26,9 @@ export default class ObjectList {
     /** The second window (#objects-list-others) that takes everyone outside the team. */
     private readonly othersContainer: HTMLElement | null;
     private readonly othersContent: HTMLElement | null;
+    /** React roots on the two lists' contents. */
+    private readonly contentRoot: Root | null;
+    private readonly othersRoot: Root | null;
     private separateOthers = false;
     private objectListPanelEnabled = true;
     private isMobile = false;
@@ -52,6 +55,8 @@ export default class ObjectList {
         this.content = this.setupContainer(this.container);
         this.othersContainer = lists.others;
         this.othersContent = this.setupContainer(this.othersContainer);
+        this.contentRoot = this.content ? createRoot(this.content) : null;
+        this.othersRoot = this.othersContent ? createRoot(this.othersContent) : null;
         this.isMobile = this.isMobileBrowser();
         this.attackController = createAttackController(client);
         this.handlers = new ObjectListEventHandlers({
@@ -88,7 +93,7 @@ export default class ObjectList {
             content: this.content,
             isMobile: this.isMobile,
             handlers: this.handlers,
-            buildBodyLines: () => this.buildListViewLinesForPip(),
+            buildContext: () => this.buildPipContext(),
         });
         this.client.on("output-sent", () => this.pip.handleOutputUpdate());
         this.client.on("buffer-sent", () => this.pip.handleOutputUpdate());
@@ -118,7 +123,7 @@ export default class ObjectList {
         globalStorage.onChange('uiSettings', () => {
             this.scheduleRender();
         });
-        this.render();
+        this.scheduleRender();
     }
 
     private initializeCardViewMode() {
@@ -133,7 +138,7 @@ export default class ObjectList {
             }
             if (this.viewMode !== mode) {
                 this.viewMode = mode;
-                this.render();
+                this.scheduleRender();
             }
         });
     }
@@ -161,7 +166,7 @@ export default class ObjectList {
             : 'list';
         if (this.viewMode !== nextViewMode) {
             this.viewMode = nextViewMode;
-            this.render();
+            this.scheduleRender();
         }
     }
 
@@ -208,55 +213,33 @@ export default class ObjectList {
         });
     }
 
+    /**
+     * Always called from a microtask (scheduleRender) or a test, never from
+     * inside a React render, so it can commit synchronously: the click
+     * handlers and the pop-out window read the lists right after.
+     */
     private render() {
-        if (!this.container || !this.content) return;
+        if (!this.container || !this.contentRoot) return;
         const manager = this.client.ObjectManager;
         if (!manager) return;
         const objects = manager.getObjectsOnLocation();
         const split = this.isSplit();
         const ctx = buildRenderContext(this.client, objects, this.attackController.getAttackCommand());
-        this.renderInto(this.content, scopeRenderContext(ctx, split ? 'team' : 'all'));
-        if (this.othersContent) {
-            if (split) {
-                this.renderInto(this.othersContent, scopeRenderContext(ctx, 'others'));
-            } else {
-                this.othersContent.innerHTML = "";
-            }
-        }
+        const mode = this.viewMode;
+        const contentRoot = this.contentRoot;
+        const othersRoot = this.othersRoot;
+        flushSync(() => {
+            contentRoot.render(<ObjectListView mode={mode} ctx={scopeRenderContext(ctx, split ? 'team' : 'all')} />);
+            othersRoot?.render(split ? <ObjectListView mode={mode} ctx={scopeRenderContext(ctx, 'others')} /> : null);
+        });
         this.pip.rebuild();
     }
 
-    private renderInto(content: HTMLElement, ctx: RenderContext) {
-        // Show placeholder if no objects
-        if (ctx.objects.length === 0) {
-            content.innerHTML = EMPTY_HTML;
-            return;
-        }
-
-        const strategy = getStrategy(this.viewMode);
-        content.innerHTML = strategy.render(ctx);
-
-        // Card-family flavors need the capture-phase context menu on each cards
-        // container (raid renders several); other flavors use the delegated
-        // onContextMenu via each row's data-object-id.
-        if (strategy.cardContextMenu && !this.isMobile) {
-            content.querySelectorAll('.objects-list-cards').forEach((el) => {
-                el.addEventListener('contextmenu', this.handlers.onCardContextMenu as EventListener, true);
-            });
-        }
-    }
-
-    /** Always the list flavor in PiP, whatever the current viewMode. */
-    private buildListViewLinesForPip(): string[] {
+    /** The pop-out window always shows the list view of the whole location. */
+    private buildPipContext(): RenderContext | null {
         const manager = this.client.ObjectManager;
-        if (!manager) return [];
-        const objects = manager.getObjectsOnLocation();
-
-        if (objects.length === 0) {
-            return [EMPTY_HTML];
-        }
-
-        const ctx = buildRenderContext(this.client, objects, this.attackController.getAttackCommand());
-        return renderListLines(ctx);
+        if (!manager) return null;
+        return buildRenderContext(this.client, manager.getObjectsOnLocation(), this.attackController.getAttackCommand());
     }
+
 }

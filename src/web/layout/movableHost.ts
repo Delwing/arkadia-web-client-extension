@@ -15,8 +15,9 @@ interface Slot {
 
 /**
  * An element that keeps living while the place it shows in changes: the map's
- * drawing surface, the object lists. Their contents belong to an engine
- * (`EmbeddedMap`, `ObjectList`), not to React, so a remount would lose them.
+ * drawing surface, the object lists. Their contents are not the parent React
+ * tree's (the map engine's drawing; the object lists' own React root, mounted
+ * by `ObjectList`), so a remount would lose them.
  *
  * Places ("slots") attach to the host and detach again; the host sits in the
  * attached slot with the highest priority, the latest one on a tie. The default

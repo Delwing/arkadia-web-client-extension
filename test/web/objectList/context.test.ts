@@ -1,4 +1,4 @@
-import { getStrategy } from '@web/objectList/strategies/index.ts';
+import { renderView } from './renderView';
 import { buildRenderContext, scopeRenderContext } from '@web/objectList/context';
 
 function makeClient(team: string[], queue: number[] = []) {
@@ -38,8 +38,8 @@ describe('scopeRenderContext', () => {
 
   test('attacker arrows still see the other side', () => {
     const ctx = buildRenderContext(makeClient(['Kompan']), objects, 'zabij');
-    const teamHtml = getStrategy('list').render(scopeRenderContext(ctx, 'team'));
-    const othersHtml = getStrategy('list').render(scopeRenderContext(ctx, 'others'));
+    const teamHtml = renderView('list', scopeRenderContext(ctx, 'team')).textContent;
+    const othersHtml = renderView('list', scopeRenderContext(ctx, 'others')).textContent;
     // The ork (2) attacks Kompan, the teammate (1) attacks the ork.
     expect(teamHtml).not.toContain('Goblin');
     expect(teamHtml).toContain(' <- 2');
