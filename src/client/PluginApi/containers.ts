@@ -147,10 +147,16 @@ export interface ContainerForms {
   /** Accusative form (biernik) - e.g., "plecak", "torbe" */
   biernik: string;
   /**
-   * Worn on the back or at the belt - address it as `zalozonego ${dopelniacz}`
+   * Worn on the back or a shoulder - address it as `zalozonego ${dopelniacz}`
    * (`zalozonej` for a feminine bag), numbered among the worn ones when several are.
+   * Also set for a bag at the belt, which `attached` says is addressed differently.
    */
   worn?: boolean;
+  /**
+   * At the belt - address it as `przytroczonego ${dopelniacz}` (`przytroczonej`
+   * for a feminine bag), numbered among the bags at the belt when several are.
+   */
+  attached?: boolean;
   /**
    * Which of several same-named bags, when the player carries more than one -
    * address it as `${index}. swojej ${dopelniacz}`. Absent means the first one.

@@ -205,7 +205,7 @@ describe('inventory window actions', () => {
         expect(getInventoryState().stale).toBe(false);
     });
 
-    test('a worn bag is "zalozony", a carried one "swoj", each numbered only among its own kind', async () => {
+    test('a worn bag is "zalozony", one at the belt "przytroczony", a carried one "swoj", each numbered only among its own kind', async () => {
         client.onLine([
             'Na plecach nosisz prawie pusty otwarty skorzany plecak.',
             'Do pasa masz przytroczone dwie zamkniete skorzane sakiewki.',
@@ -226,7 +226,7 @@ describe('inventory window actions', () => {
 
         expect(sent).toEqual([
             'otworz zalozony plecak',
-            'otworz 2. zalozona sakiewke',
+            'otworz 2. przytroczona sakiewke',
             'otworz swoj plecak',
             'otworz swoja sakiewke',
         ]);

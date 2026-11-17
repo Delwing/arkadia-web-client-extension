@@ -199,7 +199,7 @@ describe('bagManager /pojemnik', () => {
         expect(printed).toContain('Ustaw zalozona torba jako:');
     });
 
-    test('offers bags on the back and at the belt as worn, numbered among the worn ones', () => {
+    test('offers bags on the back as worn and at the belt as attached, each numbered among its own', () => {
         const printed = scanInventory(
             'Na plecach nosisz prawie pusty otwarty skorzany plecak.',
             'Do pasa masz przytroczone otwarta runiczna sakiewke i dwie zamkniete skorzane sakiewki.',
@@ -207,8 +207,8 @@ describe('bagManager /pojemnik', () => {
             'Masz przy sobie zamkniety prosty plecak i otwarta prosta sakiewke.',
         );
         expect(printed).toContain('Ustaw zalozony plecak jako:');
-        expect(printed).toContain('Ustaw 1. zalozona sakiewka (otwarta runiczna) jako:');
-        expect(printed).toContain('Ustaw 3. zalozona sakiewka (zamkniete skorzane) jako:');
+        expect(printed).toContain('Ustaw 1. przytroczona sakiewka (otwarta runiczna) jako:');
+        expect(printed).toContain('Ustaw 3. przytroczona sakiewka (zamkniete skorzane) jako:');
         // Slung over a shoulder is not known to be "zalozona": it stays "swoja"
         expect(printed).toContain('Ustaw torba jako:');
         // Carried ones are numbered only among the carried: where the worn ones fall is not known
@@ -246,6 +246,28 @@ describe('bagManager /pojemnik', () => {
             'zamknij zalozony plecak',
         ]);
         expect(getContainerForms('gems')).toEqual({ mianownik: 'plecak', dopelniacz: 'plecaka', biernik: 'plecak', worn: true });
+    });
+
+    test('a bag at the belt is przytroczona, worn on a shoulder zalozona', () => {
+        // Verbatim from the game
+        const printed = scanInventory(
+            'Do pasa masz przytroczone zamknieta zamszowa wyciskana sakiewke i okragly buklak.',
+            'Na lewym ramieniu nosisz prawie pusta zamknieta skorzana jasnobrazowa torbe.',
+            'Masz przy sobie 35 zlotych monet, otwarty maly skorzany woreczek i otwarte nieduze zawiniatko.',
+        );
+        expect(printed).toContain('Ustaw przytroczona sakiewka jako:');
+        expect(printed).toContain('Ustaw zalozona torba jako:');
+
+        characterStorage.set('containers', { money: 'przytroczona sakiewka', gems: 'zalozona torba', food: 'plecak', other: 'plecak' });
+        initBagManager((client as unknown) as any);
+        client.sendCommand.mockClear();
+        containerAction(client as any, 'money', 'put', 'monety');
+        expect(client.sendCommand.mock.calls.map(([cmd]) => cmd)).toEqual([
+            'otworz przytroczona sakiewke',
+            'wloz monety do przytroczonej sakiewki',
+            'zamknij przytroczona sakiewke',
+        ]);
+        expect(getContainerForms('money')).toEqual({ mianownik: 'sakiewka', dopelniacz: 'sakiewki', biernik: 'sakiewke', worn: true, attached: true });
     });
 
     test('numbers several bags of the same kind, plural ones included', () => {

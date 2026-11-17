@@ -75,18 +75,33 @@ const descriptionStops = new Set([
 ]);
 
 /**
- * A stored bag is its noun, optionally prefixed with which of several same-named
- * bags it is: "sakiewka" (the first one) or "2. sakiewka". A worn one says so -
- * "zalozony plecak", "2. zalozona sakiewka" - and is numbered among the worn ones:
- * "zalozonego plecaka" names the one on the back however many are carried.
+ * How the game addresses a bag that is not just carried: one on the back or worn
+ * on a shoulder is "zalozony", one at the belt "przytroczony". Each is its own
+ * kind, numbered only among bags worn the same way.
  */
-function parseBag(bag: string): { noun: string; index?: number; worn: boolean } {
-    const match = bag.match(/^(?:(\d+)\.\s*)?(?:(zalozon[ya])\s+)?(\S+)$/);
-    if (!match) return { noun: bag, worn: false };
+export type Wear = "zalozony" | "przytroczony";
+
+/** "zalozona sakiewka" / "z zalozonej sakiewki", "przytroczony woreczek" / "z przytroczonego woreczka" */
+export function wearForms(wear: Wear, feminine: boolean): { biernik: string; dopelniacz: string } {
+    const stem = wear.slice(0, -1);
+    return feminine
+        ? { biernik: `${stem}a`, dopelniacz: `${stem}ej` }
+        : { biernik: `${stem}y`, dopelniacz: `${stem}ego` };
+}
+
+/**
+ * A stored bag is its noun, optionally prefixed with which of several same-named
+ * bags it is: "sakiewka" (the first one) or "2. sakiewka". A worn one says how -
+ * "zalozony plecak", "2. przytroczona sakiewka" - and is numbered among bags worn
+ * that way: "zalozonego plecaka" names the one on the back however many are carried.
+ */
+function parseBag(bag: string): { noun: string; index?: number; worn?: Wear } {
+    const match = bag.match(/^(?:(\d+)\.\s*)?(?:(zalozon|przytroczon)[ya]\s+)?(\S+)$/);
+    if (!match) return { noun: bag };
     return {
         noun: match[3],
         ...(match[1] !== undefined && { index: Number(match[1]) }),
-        worn: match[2] !== undefined,
+        ...(match[2] !== undefined && { worn: `${match[2]}y` as Wear }),
     };
 }
 
@@ -94,10 +109,10 @@ function isFeminine(noun: string): boolean {
     return bagPronouns[noun]?.biernik === "swoja";
 }
 
-/** How a bag is stored: "plecak", "2. sakiewka", "zalozony plecak", "2. zalozona sakiewka" */
-function bagName(noun: string, worn: boolean, index?: number): string {
+/** How a bag is stored: "plecak", "2. sakiewka", "zalozony plecak", "2. przytroczona sakiewka" */
+function bagName(noun: string, worn: Wear | undefined, index?: number): string {
     const ordinal = index !== undefined ? `${index}. ` : "";
-    return `${ordinal}${worn ? (isFeminine(noun) ? "zalozona " : "zalozony ") : ""}${noun}`;
+    return `${ordinal}${worn ? `${wearForms(worn, isFeminine(noun)).biernik} ` : ""}${noun}`;
 }
 
 export type BuiltInContainerType = (typeof builtInTypes)[number];
@@ -178,6 +193,8 @@ export interface ContainerForms {
     index?: number;
     /** Worn (on the back, at the belt, on a shoulder): addressed as "zalozonego", numbered among the worn ones */
     worn?: boolean;
+    /** At the belt: "przytroczonego" rather than "zalozonego", numbered among the bags at the belt */
+    attached?: boolean;
 }
 
 export function getContainer(type: ContainerType): string {
@@ -194,7 +211,8 @@ export function getContainerForms(type: ContainerType): ContainerForms | null {
         dopelniacz: bagInDopelniacz[noun],
         biernik: bagInBiernik[noun],
         ...(index !== undefined && { index }),
-        ...(worn && { worn }),
+        ...(worn && { worn: true }),
+        ...(worn === "przytroczony" && { attached: true }),
     };
 }
 
@@ -254,7 +272,8 @@ export function assignContainer(type: string, bag: string | null): boolean {
 
 /**
  * Command forms of a known bag, with the ordinal of the chosen one: "2. swoja sakiewke",
- * or for a worn one "zalozony plecak" / "zalozonego plecaka", which no carried bag answers to
+ * or for a worn one "zalozony plecak" / "zalozonego plecaka", "przytroczona sakiewka" /
+ * "przytroczonej sakiewki", which no carried bag answers to
  */
 function getBagForms(bag: string) {
     const { noun, index, worn } = parseBag(bag);
@@ -263,9 +282,7 @@ function getBagForms(bag: string) {
     const known = worn ? undefined : carriedOrdinal?.(bagInBiernik[noun], index ?? 1);
     const ordinal = known ? `${known}. ` : index !== undefined ? `${index}. ` : "";
     const feminine = isFeminine(noun);
-    const [biernik, dopelniacz] = worn
-        ? [feminine ? "zalozona" : "zalozony", feminine ? "zalozonej" : "zalozonego"]
-        : [bagPronouns[noun].biernik, bagPronouns[noun].dopelniacz];
+    const { biernik, dopelniacz } = worn ? wearForms(worn, feminine) : bagPronouns[noun];
     return {
         noun,
         biernik: `${ordinal}${biernik} ${bagInBiernik[noun]}`,
@@ -518,14 +535,21 @@ function showConfig(client: Client) {
 }
 
 /**
- * Lines of the `i` reply whose bags answer to "zalozony": on the back, at the belt
- * and worn on a shoulder. Anything else (slung over a shoulder, ...) is not known
- * to, and stays "swoj".
+ * Lines of the `i` reply whose bags answer to "zalozony" (on the back, worn on a
+ * shoulder) or "przytroczony" (at the belt). Anything else (slung over a
+ * shoulder, ...) is not known to, and stays "swoj".
  */
-const WORN_LINE = /^(?:na plecach nosisz|do pasa masz przytroczon|na (?:lewym|prawym) ramieniu nosisz)/;
+const WORN_LINES: { pattern: RegExp; wear: Wear }[] = [
+    { pattern: /^(?:na plecach nosisz|na (?:lewym|prawym) ramieniu nosisz)/, wear: "zalozony" },
+    { pattern: /^do pasa masz przytroczon/, wear: "przytroczony" },
+];
 
-/** A bag in the `i` reply, worn when its line is one of WORN_LINE */
-type FoundBag = { noun: string; description: string; worn: boolean };
+function lineWear(line: string): Wear | undefined {
+    return WORN_LINES.find(({ pattern }) => pattern.test(line))?.wear;
+}
+
+/** A bag in the `i` reply, worn when its line is one of WORN_LINES */
+type FoundBag = { noun: string; description: string; worn?: Wear };
 
 /** Last few words before the bag noun, within its own item of the inventory list */
 function describeBefore(text: string): string {
@@ -536,7 +560,7 @@ function describeBefore(text: string): string {
 }
 
 /** Bags named in an inventory line, in order; "dwie runiczne sakiewki" counts as two */
-function findBags(line: string, worn = false): FoundBag[] {
+function findBags(line: string, worn?: Wear): FoundBag[] {
     const found: { at: number; bag: FoundBag }[] = [];
     Object.keys(bagInBiernik).forEach((noun) => {
         const singular = new RegExp(`\\b${bagInBiernik[noun]}\\b`, "g");
@@ -553,14 +577,14 @@ function findBags(line: string, worn = false): FoundBag[] {
 }
 
 /**
- * Bags to offer: worn ones (on the back, at the belt, on a shoulder) as "zalozony plecak",
- * the rest as plain "plecak", which commands make "swoj". Each is numbered only
+ * Bags to offer: worn ones as "zalozony plecak" (on the back, on a shoulder) or
+ * "przytroczona sakiewka" (at the belt), the rest as plain "plecak", which commands make "swoj". Each is numbered only
  * among its own kind of the same noun, and only when there are several: where
  * a worn bag falls in the game's count of all of them is not known, so a carried
  * one is never numbered past the worn ones.
  */
 function bagChoices(found: FoundBag[]): { bag: string; label: string }[] {
-    const key = (noun: string, worn: boolean) => `${worn ? "worn" : "own"}:${noun}`;
+    const key = (noun: string, worn?: Wear) => `${worn ?? "own"}:${noun}`;
     const counts = new Map<string, number>();
     found.forEach(({ noun, worn }) => counts.set(key(noun, worn), (counts.get(key(noun, worn)) ?? 0) + 1));
     const seen = new Map<string, number>();
@@ -583,7 +607,8 @@ function showUnsure(client: Client, found: FoundBag[]) {
     const nouns = [...new Set(found.map(({ noun }) => noun))]
         .filter(noun => found.some(b => b.noun === noun && b.worn) && found.some(b => b.noun === noun && !b.worn));
     nouns.forEach((noun) => {
-        const line = new AnsiAwareBuffer(`${noun}: zalozony i przy sobie - gra moze liczyc je inaczej. `);
+        const worn = found.find(b => b.noun === noun && b.worn)!.worn;
+        const line = new AnsiAwareBuffer(`${noun}: ${worn} i przy sobie - gra moze liczyc je inaczej. `);
         const text = "sprawdz";
         const link = colorString(text, TYPE_COLOR);
         link.createLink([0, text.length], {
@@ -637,7 +662,7 @@ function configure(client: Client) {
     const tag = "bag-config";
     client.Triggers.registerTrigger(/.*/, (line) => {
         const rawLine = line.text.toLowerCase();
-        found.push(...findBags(rawLine, WORN_LINE.test(rawLine)));
+        found.push(...findBags(rawLine, lineWear(rawLine)));
         // "Masz przy sobie" closes the inventory but lists carried bags too
         if (rawLine.startsWith("masz przy sobie")) {
             client.Triggers.removeByTag(tag);

@@ -70,9 +70,9 @@ Menedżer pojemników pozwala przypisać wybrane torby, plecaki i inne pojemniki
 3. Wybierz `wszystkie`, by używać pojemnika dla wszystkich kategorii
 4. Sprawdź aktualne przypisania komendą `/pojemniki`
 
-Pojemnik noszony na plecach, przytroczony do pasa albo noszony na ramieniu (`Na prawym ramieniu nosisz … torbe`) jest „założony” — lista pokazuje go jako `zalozony plecak`, a komendy mówią `otworz zalozony plecak`, `wloz … do zalozonego plecaka`. Pozostałe (przy sobie, przewieszone albo zarzucone na ramię) są „swoje”: `otworz swoja sakiewke`.
+Pojemnik noszony na plecach albo na ramieniu (`Na prawym ramieniu nosisz … torbe`) jest „założony” — lista pokazuje go jako `zalozony plecak`, a komendy mówią `otworz zalozony plecak`, `wloz … do zalozonego plecaka`. Przytroczony do pasa jest „przytroczony”: `otworz przytroczona sakiewke`, `wloz … do przytroczonej sakiewki`. Pozostałe (przy sobie, przewieszone albo zarzucone na ramię) są „swoje”: `otworz swoja sakiewke`.
 
-Jeśli masz kilka pojemników tego samego rodzaju, lista numeruje je osobno wśród założonych i osobno wśród pozostałych — `1. zalozona sakiewka (otwarta runiczna)`, `2. zalozona sakiewka (skórzana)` — a komendy trafiają do wybranego (`otworz 2. zalozona sakiewke`). Numer to kolejność w ekwipunku, więc po zdobyciu lub oddaniu innej sakiewki uruchom `/pojemnik` ponownie.
+Jeśli masz kilka pojemników tego samego rodzaju, lista numeruje je osobno wśród założonych, osobno wśród przytroczonych i osobno wśród pozostałych — `1. przytroczona sakiewka (otwarta runiczna)`, `2. przytroczona sakiewka (skórzana)` — a komendy trafiają do wybranego (`otworz 2. przytroczona sakiewke`). Numer to kolejność w ekwipunku, więc po zdobyciu lub oddaniu innej sakiewki uruchom `/pojemnik` ponownie.
 
 Gdy masz pojemniki tego samego rodzaju i noszone, i przy sobie (np. plecak na plecach i drugi w ekwipunku), nie wiadomo, który gra liczy jako pierwszy. Okno ekwipunku pokazuje wtedy ostrzeżenie z linkiem **Sprawdź** — po kliknięciu wysyła ukryte `ocen 1. plecak`, `ocen 2. plecak`… i z odpowiedzi ustala numery. Od tej pory i okno, i komendy pojemników (`/wdp`, `/wzp`) używają tych numerów (`wloz … do 2. swojego plecaka`), dopóki plecaki się nie zmienią. Bez kliknięcia nic nie jest wysyłane.
 

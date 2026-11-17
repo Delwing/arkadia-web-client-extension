@@ -2,7 +2,7 @@ import Client from "../Client";
 import eventBus from "@modules/core/eventBus";
 import { characterStorage } from "@modules/core/storage";
 import { onContainerListing, parseItems, splitItemList, type ContainerItem, type ParsedContainer } from "./prettyContainers";
-import { getAssignedBags, setCarriedBagOrdinals } from "./bagManager";
+import { getAssignedBags, setCarriedBagOrdinals, wearForms, type Wear } from "./bagManager";
 import { normalizeHerbBagsState } from "../types/herbs";
 import { iLineEntries, type ZlomSnapshot } from "@modules/data/zlomStore";
 import { getZlomView } from "@modules/crowd/crowdView";
@@ -42,8 +42,8 @@ export interface InventoryEntry {
     state?: "open" | "closed";
     /** Bag noun in the accusative ("woreczek", "torbe"), for a single bag */
     noun?: string;
-    /** On the back, at the belt or on a shoulder, where a bag answers to "zalozony" */
-    worn?: boolean;
+    /** On the back or a shoulder, where a bag answers to "zalozony", or at the belt: "przytroczony" */
+    worn?: Wear;
     /** The bag's number in the game among all of its kind, checked with `ocen` */
     ordinal?: number;
     /** Types this bag holds in /pojemnik ("money", "gems", ...), when it is one of those bags */
@@ -162,11 +162,12 @@ const ARMOUR_PROSE: RegExp[] = [
 
 // Patterns are ASCII-only: the game output is normalized before matching.
 /**
- * `worn`: what the line lists answers to "zalozony" / "zalozona" - on the back,
- * at the belt, and a bag worn on a shoulder ("Na prawym ramieniu nosisz ...
- * torbe"). Elsewhere (slung over a shoulder, ...) that is not known, so "swoj".
+ * `worn`: what the line lists answers to "zalozony" / "zalozona" - on the back
+ * and a bag worn on a shoulder ("Na prawym ramieniu nosisz ... torbe") - or to
+ * "przytroczony" / "przytroczona" at the belt. Elsewhere (slung over a
+ * shoulder, ...) that is not known, so "swoj".
  */
-const SECTIONS: { pattern: RegExp; label: string; worn?: true; items?: (match: RegExpMatchArray) => (string | Listed)[] }[] = [
+const SECTIONS: { pattern: RegExp; label: string; worn?: Wear; items?: (match: RegExpMatchArray) => (string | Listed)[] }[] = [
     { pattern: /^(?:Trzymasz w rekach|W rekach trzymasz|Trzymasz oburacz) (.+)$/, label: IN_HANDS },
     { pattern: /^Trzymasz (.+?) w (?:prawej|lewej) rece/, label: IN_HANDS },
     // Part of the reply, so hidden with it, but listed nowhere: the pipe shows up with what is carried
@@ -232,14 +233,14 @@ const SECTIONS: { pattern: RegExp; label: string; worn?: true; items?: (match: R
     },
     { pattern: /^Na (?:lewym|prawym) nadgarstku nosisz (.+)$/, label: "Na rękach" },
     { pattern: /^Na palce masz nasuniet\S* (.+)$/, label: "Na rękach" },
-    { pattern: /^Na plecach (?:nosisz|dzwigasz) (.+)$/, label: "Na plecach", worn: true },
+    { pattern: /^Na plecach (?:nosisz|dzwigasz) (.+)$/, label: "Na plecach", worn: "zalozony" },
     { pattern: /^Na plecach masz przypiet\S* (.+)$/, label: "Na plecach" },
     { pattern: /^Na plecy masz zarzucon\S* (.+)$/, label: "Na plecach" },
-    { pattern: /^Na (?:lewym|prawym) ramieniu nosisz (.+)$/, label: "Przez ramię", worn: true },
+    { pattern: /^Na (?:lewym|prawym) ramieniu nosisz (.+)$/, label: "Przez ramię", worn: "zalozony" },
     { pattern: /^Masz przewieszon\S* (?:przez ramie )?(.+)$/, label: "Przez ramię" },
     { pattern: /^Na ramie zarzucon\S* masz (.+)$/, label: "Przez ramię" },
     { pattern: /^Ponad twoim (?:lewym|prawym) ramieniem widac przypiet\S* (.+)$/, label: "Przez ramię" },
-    { pattern: /^Do pasa masz przytroczon\S* (.+)$/, label: "Przy pasie", worn: true },
+    { pattern: /^Do pasa masz przytroczon\S* (.+)$/, label: "Przy pasie", worn: "przytroczony" },
     { pattern: /^Na biodrach nosisz (.+)$/, label: "Przy pasie" },
     { pattern: /^Przy (?:lewym|prawym) boku masz przypiet\S* (.+)$/, label: "Przy boku" },
     { pattern: /^Przy (?:lewej|prawej) nodze masz przypiet\S* (.+)$/, label: "Przy nodze" },
@@ -368,8 +369,8 @@ interface Entry {
     noun?: string;
     /** The weapon in a sheath or sling */
     held?: string[];
-    /** On the back, at the belt or on a shoulder: a bag there is "zalozony" */
-    worn?: boolean;
+    /** On the back or a shoulder: a bag there is "zalozony"; at the belt "przytroczony" */
+    worn?: Wear;
 }
 
 /** Things the window leaves out: a zawiniatko is a club item, not something to manage */
@@ -448,7 +449,7 @@ export function parseInventory(lines: string[]): Section[] {
             if (isIgnored(text)) return;
             const added = toEntries(text);
             if (held && added.length === 1) added[0].held = held;
-            if (rule.worn) added.forEach(entry => { entry.worn = true; });
+            if (rule.worn) added.forEach(entry => { entry.worn = rule.worn; });
             section!.entries.push(...added);
         });
         // A part with only ignored things in it, such as "Nosisz zamkniete zawiniatko."
@@ -481,9 +482,9 @@ export interface BagCommandForms {
 }
 
 /**
- * A carried bag in commands. A worn one (on the back, at the belt) is
- * "zalozony", any other "swoj". Each is numbered only among bags of its own
- * kind - worn or not - and only when there are several: where a worn bag falls
+ * A carried bag in commands. A worn one is "zalozony" (on the back, a shoulder)
+ * or "przytroczony" (at the belt), any other "swoj". Each is numbered only among
+ * bags of its own kind - worn which way, or not - and only when there are several: where a worn bag falls
  * in the game's count of all of them is not known, so it is never counted in.
  */
 export function bagCommandForms(key: string): BagCommandForms | null {
@@ -491,14 +492,15 @@ export function bagCommandForms(key: string): BagCommandForms | null {
     if (!entry?.noun) return null;
     const { pronoun, genitive } = BAG_NOUNS[entry.noun];
     const feminine = pronoun === "swojej";
-    const same = entries().filter(e => e.noun === entry.noun && !!e.worn === !!entry.worn);
+    const same = entries().filter(e => e.noun === entry.noun && e.worn === entry.worn);
     // Checked with `ocen`: the game's own number, among all of its kind
     const known = entry.worn ? undefined : verifiedOrdinal(entry);
     const ordinal = known ? `${known}. ` : same.length > 1 ? `${same.indexOf(entry) + 1}. ` : "";
     if (entry.worn) {
+        const forms = wearForms(entry.worn, feminine);
         return {
-            biernik: `${ordinal}${feminine ? "zalozona" : "zalozony"} ${entry.noun}`,
-            dopelniacz: `${ordinal}${feminine ? "zalozonej" : "zalozonego"} ${genitive}`,
+            biernik: `${ordinal}${forms.biernik} ${entry.noun}`,
+            dopelniacz: `${ordinal}${forms.dopelniacz} ${genitive}`,
             from: "z",
         };
     }
@@ -529,7 +531,8 @@ function bagsOf(noun: string): Entry[] {
 }
 
 function bagIdentity(entry: Entry): string {
-    return `${entry.worn ? "worn" : "carried"}:${stemKey(entry.name)}`;
+    const kind = entry.worn === "zalozony" ? "worn" : entry.worn === "przytroczony" ? "belt" : "carried";
+    return `${kind}:${stemKey(entry.name)}`;
 }
 
 function signature(noun: string): string {
@@ -590,12 +593,12 @@ function describe(name: string): Pick<InventoryEntry, "label" | "state"> {
 function assignedBags(): Map<string, { id: string; label: string }[]> {
     const result = new Map<string, { id: string; label: string }[]>();
     getAssignedBags().forEach(({ bag, types }) => {
-        // "2. zalozona sakiewka" is the second worn one, "2. sakiewka" the second not worn
-        const match = bag.match(/^(?:(\d+)\.\s*)?(zalozon[ya]\s+)?(\S+)$/);
+        // "2. przytroczona sakiewka" is the second at the belt, "2. sakiewka" the second not worn
+        const match = bag.match(/^(?:(\d+)\.\s*)?(?:(zalozon|przytroczon)[ya]\s+)?(\S+)$/);
         const noun = match && BAG_ACCUSATIVE[match[3]];
         if (!match || !noun) return;
-        const worn = match[2] !== undefined;
-        const entry = entries().filter(e => e.noun === noun && !!e.worn === worn)[Number(match[1] ?? 1) - 1];
+        const worn = match[2] !== undefined ? `${match[2]}y` as Wear : undefined;
+        const entry = entries().filter(e => e.noun === noun && e.worn === worn)[Number(match[1] ?? 1) - 1];
         if (entry) result.set(entry.key, types);
     });
     return result;
@@ -947,7 +950,7 @@ export default function initInventory(
             // Said in the game window too: the check may have come from /pojemnik
             const numbered = bagsOf(ocenNoun)
                 .sort((a, b) => ocenFound[a.key] - ocenFound[b.key])
-                .map(bag => `${ocenFound[bag.key]}. ${describe(bag.name).label}${bag.worn ? " (zalozony)" : ""}`);
+                .map(bag => `${ocenFound[bag.key]}. ${describe(bag.name).label}${bag.worn ? ` (${bag.worn})` : ""}`);
             client.print(`Numeracja (${ocenNoun}): ${numbered.join(", ")}`);
         } else if (ocenNoun) {
             client.print(`Nie udalo sie ustalic numeracji (${ocenNoun}).`);
