@@ -13,6 +13,8 @@ import { getInventoryState, type InventoryEntry, type InventoryState } from '@cl
 import { getTransformDefinitions, type ContainerItem } from '@client/scripts/prettyContainers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { containerTypeLabel, itemCategory, splitName, zlomName, type ItemCategory } from './inventoryView';
+import { CoinIcon } from './CoinIcon';
+import { coinMetal } from './coinMetal';
 import { getZlomView, subscribeZlomView, type ZlomView } from '@modules/crowd/crowdView';
 import {
     dropListRows, useInventoryDrag, type DragItem, type DragSource, type DropRow, type InventoryDrag, type Pending,
@@ -137,7 +139,15 @@ function ItemName({ item, text }: { item: ContainerItem; text: string }) {
     );
 }
 
-function CategoryIcon({ category }: { category: ItemCategory }) {
+function CategoryIcon({ category, name }: { category: ItemCategory; name?: string }) {
+    const metal = category === 'coins' && name ? coinMetal(name) : null;
+    if (metal) {
+        return (
+            <span className={`inventory-popup__icon inventory-popup__icon--${category}`}>
+                <CoinIcon metal={metal} size={13} />
+            </span>
+        );
+    }
     const Icon = CATEGORY_ICONS[category] ?? Circle;
     return (
         <span className={`inventory-popup__icon inventory-popup__icon--${category}`}>
@@ -156,7 +166,7 @@ function ItemVisual({ item, nested }: { item: DragItem; nested?: boolean }) {
     const category = useMemo(() => itemCategory(item.name, false), [item.name]);
     return (
         <div className={`inventory-popup__row${nested ? ' inventory-popup__row--nested' : ''}`}>
-            <CategoryIcon category={category} />
+            <CategoryIcon category={category} name={item.name} />
             <ItemName item={item} text={item.label} />
             <Count count={item.count} />
         </div>
@@ -172,7 +182,7 @@ function HeldRow({ name }: { name: string }) {
     const category = useMemo(() => itemCategory(name, false), [name]);
     return (
         <div className="inventory-popup__row inventory-popup__row--nested">
-            <CategoryIcon category={category} />
+            <CategoryIcon category={category} name={name} />
             <ItemName item={{ name, count: 1 }} text={name} />
         </div>
     );
@@ -191,7 +201,7 @@ function ItemRow({ entry, draggable }: { entry: InventoryEntry; draggable?: bool
                 onPointerDown={draggable ? e => drag.press(e, { type: 'entry', key: entry.key }, toDragItem(entry)) : undefined}
                 onContextMenu={e => showEntryMenu(e, entry, bags)}
             >
-                <CategoryIcon category={category} />
+                <CategoryIcon category={category} name={entry.name} />
                 <ItemName item={entry} text={entry.label} />
                 <Count count={entry.count} />
                 {entry.holder && held.length === 0 && (
@@ -216,7 +226,7 @@ function ContentRow({ item, index, bag, draggable }: { item: ContainerItem; inde
             onPointerDown={draggable ? e => drag.press(e, { type: 'content', bag: bag.key, item: index }, toDragItem(item)) : undefined}
             onContextMenu={e => showContentMenu(e, item, bag, index, bags)}
         >
-            <CategoryIcon category={category} />
+            <CategoryIcon category={category} name={item.name} />
             <ItemName item={item} text={item.name} />
             <Count count={item.count} />
         </div>

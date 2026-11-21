@@ -34,4 +34,38 @@ describe('coin colors trigger', () => {
     expect(result?.text).toContain(' i zlote.');
     expect(result?.text).toBe(line);
   });
+
+  const colored = (line: string) => {
+    const result = parse(line);
+    expect(result?.text).toBe(line);
+    return (result?.getSegments() ?? [])
+      .filter(seg => seg.state?.foreground)
+      .map(seg => seg.text)
+      .join('|');
+  };
+
+  test.each([
+    ['Masz trzy zlote monety.', 'trzy zlote'],
+    ['Masz wiele zlotych monet.', 'wiele zlotych'],
+    ['Masz trzynascie srebrnych monet.', 'trzynascie srebrnych'],
+    ['Masz czterdziesci trzy miedziane monety.', 'czterdziesci trzy miedziane'],
+    ['Masz dwadziescia jeden zlotych monet.', 'dwadziescia jeden zlotych'],
+    ['Masz piecdziesiat siedem srebrnych monet.', 'piecdziesiat siedem srebrnych'],
+    ['Masz sto dwadziescia piec miedzianych monet.', 'sto dwadziescia piec miedzianych'],
+    ['Masz kilkanascie mithrylowych monet.', 'kilkanascie mithrylowych'],
+    ['Wyjmujesz jedna zlota monete.', 'jedna zlota'],
+    ['Placisz 12 srebrnymi monetami.', '12 srebrnymi'],
+    ['Nie masz zadnej zlotej monety.', 'zlotej'],
+    ['Masz zlote monety.', 'zlote'],
+  ])('colors the amount with the metal: %s', (line, expected) => {
+    expect(colored(line)).toBe(expected);
+  });
+
+  test('does not take an unrelated word before the metal', () => {
+    expect(colored('Wyjmujesz zlote monety.')).toBe('zlote');
+  });
+
+  test('does not color across sentences', () => {
+    expect(colored('Widzisz zlote runo. Lezy tu moneta.')).toBe('');
+  });
 });
