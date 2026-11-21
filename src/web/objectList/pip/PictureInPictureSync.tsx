@@ -4,10 +4,13 @@
 // changes. The header button drives it through `objectList.togglePip` and
 // follows `objectList.pipActiveChanged`.
 
+import {flushSync} from "react-dom";
+import {createRoot, type Root} from "react-dom/client";
 import type Client from "@client/Client";
 import eventBus from "@modules/core/eventBus";
 import type {ObjectListEventHandlers} from "../ObjectListEventHandlers.ts";
-import {buildPipHtml} from "./pipHtml.ts";
+import type {RenderContext} from "../context.ts";
+import {PipView} from "./PipView.tsx";
 import {PipStatus} from "./pipStatus.ts";
 import {PIP_STYLE_MARKER, PIP_STYLES} from "./pipStyles.ts";
 
@@ -18,14 +21,15 @@ export interface PictureInPictureHost {
     content: HTMLElement | null;
     isMobile: boolean;
     handlers: ObjectListEventHandlers;
-    /** The list rows to show, already rendered. */
-    buildBodyLines(): string[];
+    /** What the list shows; null while there is nothing to read it from. */
+    buildContext(): RenderContext | null;
 }
 
 export class PictureInPictureSync {
     private pipWindow: DocumentPictureInPictureWindow | null = null;
     private pipDocument: Document | null = null;
     private pipContent: HTMLElement | null = null;
+    private pipRoot: Root | null = null;
     private pipStyleObserver: MutationObserver | null = null;
     private pipTitleObserver: MutationObserver | null = null;
     private readonly status: PipStatus;
@@ -57,14 +61,21 @@ export class PictureInPictureSync {
 
     /** Refills the window, if open. */
     rebuild() {
-        if (!this.pipContent) {
+        const root = this.pipRoot;
+        if (!root) {
             return;
         }
-        this.pipContent.innerHTML = buildPipHtml({
-            locationText: this.status.locationText,
-            coverTimerText: this.status.coverTimerText,
-            bodyLines: this.host.buildBodyLines(),
-            lastOutputHtml: this.status.lastOutputHtml,
+        // Called from the list's render and from status changes, never from
+        // inside a React render, so it commits at once.
+        flushSync(() => {
+            root.render(
+                <PipView
+                    locationText={this.status.locationText}
+                    coverTimerText={this.status.coverTimerText}
+                    ctx={this.host.buildContext()}
+                    lastOutputHtml={this.status.lastOutputHtml}
+                />,
+            );
         });
         this.syncStyles();
     }
@@ -90,6 +101,7 @@ export class PictureInPictureSync {
             pipContent.className = "objects-list-content";
             this.pipDocument.body.appendChild(pipContent);
             this.pipContent = pipContent;
+            this.pipRoot = createRoot(pipContent);
             if (!this.host.isMobile) {
                 this.host.handlers.attach(this.pipContent);
             }
@@ -130,6 +142,8 @@ export class PictureInPictureSync {
         this.pipStyleObserver = null;
         this.pipTitleObserver?.disconnect();
         this.pipTitleObserver = null;
+        this.pipRoot?.unmount();
+        this.pipRoot = null;
         this.pipWindow = null;
         this.pipDocument = null;
         this.pipContent = null;

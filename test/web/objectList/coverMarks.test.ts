@@ -1,4 +1,4 @@
-import { getStrategy } from '@web/objectList/strategies';
+import { renderView } from './renderView';
 import { buildRenderContext } from '@web/objectList/context';
 import { setRenderSettings } from '@modules/core/settings';
 
@@ -57,13 +57,12 @@ describe('cover marks', () => {
         setRenderSettings({ objectListCoverMarkers: false });
         const c = ctx();
         expect(c.coverMarks.size).toBe(0);
-        expect(getStrategy('list').render(c)).not.toContain('cover-mark');
+        expect(renderView('list', c).innerHTML).not.toContain('cover-mark');
     });
 
     test('every flavor puts the shield after the name', () => {
         for (const mode of ['list', 'card', 'compact', 'compact-dots', 'raid', 'nearby'] as const) {
-            const doc = document.createElement('div');
-            doc.innerHTML = getStrategy(mode).render(ctx());
+            const doc = renderView(mode, ctx());
             const us = doc.querySelector('.is-covered-us[data-object-id="4"]');
             const team = doc.querySelector('.is-covered-team[data-object-id="5"]');
             expect(us?.lastElementChild?.classList.contains('cover-mark--us'), mode).toBe(true);
@@ -73,9 +72,9 @@ describe('cover marks', () => {
     });
 
     test('the list reserves two columns after every name, so the arrows line up', () => {
-        const lines = getStrategy('list').render(ctx()).split('<br>');
+        const lines = renderView('list', ctx()).innerHTML.split('<br>');
         // Drop the shield (it floats, takes no column) and the tags around the text.
-        const plain = (html: string) => html.replace(/<svg.*?<\/svg>/g, '').replace(/<[^>]+>/g, '');
+        const plain = (html: string) => html.replace(/<svg.*?<\/svg>/g, '').replace(/<[^>]+>/g, '').replace(/&lt;/g, '<');
         const aragorn = plain(lines[1]); // longest-but-one name, attacked by 4
         const ork = plain(lines[3]); // the longest name, covered and attacked by 2
         expect(ork).toContain('Duzy ork   <- 2');

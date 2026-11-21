@@ -36,11 +36,10 @@ describe('ObjectList', () => {
     ];
     client.ObjectManager.getObjectsOnLocation = () => objects;
     (objectList as any).render();
-    const html = (
-      document.querySelector('#objects-list .objects-list-content') as HTMLElement
-    ).innerHTML.split('<br>');
-    expect(html[0]).not.toContain('#b19cd9');
-    expect(html[1]).toContain('#b19cd9');
+    const descColor = (id: string) =>
+      (document.querySelector(`.object-desc[data-object-num="${id}"] span`) as HTMLElement | null)?.style.color ?? '';
+    expect(descColor('1')).toBe('');
+    expect(descColor('2')).toBe('rgb(177, 156, 217)'); // #b19cd9
   });
 
   test('highlights next queued enemy number in gold', () => {
@@ -58,7 +57,7 @@ describe('ObjectList', () => {
       '.object-num[data-object-id="123"]',
     ) as HTMLElement;
     expect(highlighted).toBeTruthy();
-    expect(highlighted.outerHTML).toContain('color:#ffd700');
+    expect(highlighted.style.color).toBe('rgb(255, 215, 0)'); // #ffd700
     expect(highlighted.classList.contains('object-num-next-target')).toBe(true);
   });
 
@@ -76,12 +75,26 @@ describe('ObjectList', () => {
     // Should not highlight 456 in gold since it's not the queued enemy
     const goblin = document.querySelector('.object-num[data-object-id="456"]') as HTMLElement;
     expect(goblin).toBeTruthy();
-    expect(goblin.outerHTML).not.toContain('color:#ffd700');
+    expect(goblin.style.color).toBe('');
     expect(goblin.classList.contains('object-num-next-target')).toBe(false);
 
     // Should not have any gold highlighting
     const goldHighlighted = document.querySelector('.object-num-next-target');
     expect(goldHighlighted).toBeNull();
+  });
+
+  test('keeps an object\'s elements across renders', () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    const client = new MockClient();
+    const objectList = new ObjectList(client as any);
+    client.ObjectManager.getObjectsOnLocation = () => [{ shortcut: '1', desc: 'Ork', num: 7, hp: 5 }];
+    (objectList as any).render();
+    const before = document.querySelector('.object-num[data-object-id="7"]');
+    client.ObjectManager.getObjectsOnLocation = () => [{ shortcut: '1', desc: 'Ork', num: 7, hp: 2 }];
+    (objectList as any).render();
+    const after = document.querySelector('.object-num[data-object-id="7"]');
+    expect(after).toBe(before);
+    expect(document.querySelector('.object-hp-bar')!.textContent).toBe('[###----]');
   });
 
   test('moves non-combat objects to the end with shortcuts starting at 50', async () => {
