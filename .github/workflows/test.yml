@@ -156,7 +156,8 @@ jobs:
           retention-days: 1
 
   e2e-test:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04, which Playwright 1.56 can't install Chromium on.
+    runs-on: ubuntu-24.04
     env:
       PLAYWRIGHT_BROWSERS_PATH: .cache/ms-playwright
     strategy:
