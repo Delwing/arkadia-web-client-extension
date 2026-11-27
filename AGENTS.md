@@ -91,7 +91,7 @@ yarn preview      # Preview production build
 
 ## CI Pipeline
 
-CI runs on **ubuntu-latest** (e2e shards pinned to **ubuntu-24.04**: Playwright 1.56 has no Chromium for 26.04) with **Node 24** and `yarn install --frozen-lockfile`.
+CI runs on **ubuntu-latest** with **Node 24** and `yarn install --frozen-lockfile`.
 Your code must pass: `yarn build` + `yarn test` + `yarn test:e2e` (12 Playwright shards).
 The helper app builds with **Go 1.24** for Windows/macOS/Linux.
 On master, plugin types are built (`yarn build:types`) and everything deploys to GitHub Pages.
