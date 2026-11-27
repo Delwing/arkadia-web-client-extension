@@ -1699,6 +1699,16 @@
                         "script": "trigger_func_skrypty_ui_gags_ciosy_zielonkawy_bretonski_mlot()"
                       },
                       {
+                        "name": "kosciany_kilof",
+                        "patterns": [
+                          {
+                            "pattern": "^Nagle zelazna glowica twojego koscianego kilofa staje w plomieniach i fala ognia uderza prosto w (?<target>.+?), powodujac (?<damage>.+?) obrazenia\\.$",
+                            "type": 1
+                          }
+                        ],
+                        "script": "trigger_func_skrypty_ui_gags_ciosy_kosciany_kilof()"
+                      },
+                      {
                         "name": "adamantytowy_mlot",
                         "patterns": [
                           {
