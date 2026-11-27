@@ -23,13 +23,13 @@ test.describe('GMCP-driven interactions', () => {
         await expect(shortcuts.first(), 'should map teammate to shortcut key').toContainText('A');
 
         const content = page.locator('#objects-list .objects-list-content');
-        const healthyBar = content.locator('span[style*="color:springgreen"]').filter({ hasText: '#######' });
+        const healthyBar = content.locator('span[style*="color: springgreen"]').filter({ hasText: '#######' });
         await expect(healthyBar, 'should show healthy teammate health bar').toHaveCount(1);
 
-        const woundedBar = content.locator('span[style*="color:yellow"]').filter({ hasText: '####---' });
+        const woundedBar = content.locator('span[style*="color: yellow"]').filter({ hasText: '####---' });
         await expect(woundedBar, 'should show wounded opponent health bar').toHaveCount(1);
 
-        const criticalBar = content.locator('span[style*="color:tomato"]').filter({ hasText: '##-----' });
+        const criticalBar = content.locator('span[style*="color: tomato"]').filter({ hasText: '##-----' });
         await expect(criticalBar, 'should show critically wounded opponent health bar').toHaveCount(1);
     });
 
