@@ -830,6 +830,14 @@ export function parseFeedingLine(raw: string): { animal: string; food: string } 
     splitIndex = lower.indexOf("miesem");
   }
 
+  // Grammar: the animal is in the accusative, the food in the instrumental.
+  // The first word with an instrumental-only ending (-em/-iem, -ym/-im, -ami)
+  // starts the food: "wiwerne uchem", "wiwerne paznokciem", "wiwerne sercem".
+  // Feminine instrumental (-a) is skipped: in ASCII it looks like the accusative.
+  if (splitIndex === -1) {
+    splitIndex = lower.findIndex((t, i) => i > 0 && /(?:em|ym|im|ami)$/.test(t));
+  }
+
   if (splitIndex > 0) {
     return {
       animal: tokens.slice(0, splitIndex).join(" "),

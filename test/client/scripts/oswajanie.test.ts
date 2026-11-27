@@ -45,6 +45,15 @@ describe("parseFeedingLine", () => {
     });
   });
 
+  it("splits on an instrumental ending when no meat marker is present", () => {
+    for (const food of ["uchem", "sercem", "odnozem", "paznokciem", "skalpem"]) {
+      expect(parseFeedingLine(`bystrooka niedojrzala wiwerne ${food}`)).toEqual({
+        animal: "bystrooka niedojrzala wiwerne",
+        food,
+      });
+    }
+  });
+
   it("handles a simple two-token line", () => {
     expect(parseFeedingLine("kot ryba")).toEqual({ animal: "kot", food: "ryba" });
   });
